@@ -1,0 +1,35 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: oklch(0.975 0.012 85);
+  --color-card: oklch(0.995 0.004 85);
+  --color-foreground: oklch(0.24 0.025 150);
+  --color-primary: oklch(0.36 0.06 155);
+  --color-primary-foreground: oklch(0.98 0.01 85);
+  --color-muted: oklch(0.945 0.014 85);
+  --color-muted-foreground: oklch(0.5 0.02 120);
+  --color-gold: oklch(0.72 0.09 80);
+  --color-accent: oklch(0.6 0.12 45);
+  --color-line: oklch(0.85 0.03 110);
+  --font-serif: "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Manrope", system-ui, sans-serif;
+}
+
+body { background: var(--color-background); color: var(--color-foreground); font-family: var(--font-sans); }
+.grid-bg { background-image: radial-gradient(var(--color-line) 1px, transparent 1px); background-size: 24px 24px; }
+
+.preset-heritage { --color-background: oklch(0.94 0.03 75); --color-card: oklch(0.97 0.025 80); --color-primary: oklch(0.38 0.07 50); --color-line: oklch(0.75 0.06 60); }
+.preset-elegance { --color-background: oklch(0.2 0.02 160); --color-card: oklch(0.27 0.025 160); --color-foreground: oklch(0.95 0.01 85); --color-primary: oklch(0.8 0.08 85); --color-primary-foreground: oklch(0.2 0.02 160); --color-line: oklch(0.45 0.05 85); --color-muted-foreground: oklch(0.75 0.02 120); }
+.preset-douceur { --color-background: oklch(0.97 0.015 20); --color-card: oklch(0.995 0.006 20); --color-primary: oklch(0.5 0.08 10); --color-line: oklch(0.85 0.05 15); }
+.preset-minimal { --color-background: oklch(1 0 0); --color-card: oklch(1 0 0); --color-primary: oklch(0.25 0 0); --color-line: oklch(0.85 0 0); }
+
+.glass { background: color-mix(in oklab, var(--color-card) 72%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+.fx { position: absolute; pointer-events: none; opacity: 0.85; animation-iteration-count: infinite; animation-timing-function: linear; }
+.fx-fall { animation-name: fall; }
+.fx-twinkle { animation-name: tw; animation-timing-function: ease-in-out; color: #fff; }
+.fx-cloud { animation-name: cloud; opacity: 0.6; }
+.fx-float { animation: float 7s ease-in-out infinite; }
+@keyframes fall { from { transform: translate3d(0, -10vh, 0) rotate(0); } to { transform: translate3d(10vw, 110vh, 0) rotate(360deg); } }
+@keyframes tw { 0%, 100% { opacity: 0.15; } 50% { opacity: 1; } }
+@keyframes cloud { from { transform: translateX(-20vw); } to { transform: translateX(120vw); } }
+@keyframes float { 50% { translate: 0 -14px; } }

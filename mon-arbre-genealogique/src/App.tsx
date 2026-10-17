@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
+import { Scene, SCENES } from "./scenes";
 import { type Person, type Tree, SPECIES, flag, W, H, layout, relation } from "./lib";
 
 const inp = "w-full rounded-xl border border-line bg-card px-4 py-3 text-sm outline-none focus:border-primary";
@@ -19,20 +20,8 @@ const Modal = ({ children, onClose }: { children: ReactNode; onClose: () => void
 );
 
 /* ---------- Accueil + connexion ---------- */
-function Hero() {
-  const [img, setImg] = useState(true);
-  if (img) return <img src="/hero.jpg" alt="" onError={() => setImg(false)} className="aspect-[4/5] w-full rounded-[2rem] object-cover shadow-2xl" />;
-  const n: [number, number, string][] = [[200, 60, "H"], [110, 170, "J"], [290, 170, "M"], [70, 300, "S"], [200, 300, "L"], [330, 300, "A"]];
-  const e = [[200, 60, 110, 170], [200, 60, 290, 170], [110, 170, 70, 300], [110, 170, 200, 300], [290, 170, 330, 300]];
-  return (
-    <svg viewBox="0 0 400 370" className="w-full rounded-[2rem] bg-gradient-to-br from-muted to-card shadow-2xl">
-      {e.map(([x1, y1, x2, y2], i) => <path key={i} d={`M${x1},${y1 + 34} V${(y1 + y2) / 2} H${x2} V${y2 - 34}`} className="fill-none stroke-gold" strokeWidth="3" />)}
-      {n.map(([x, y, l]) => <g key={l}><circle cx={x} cy={y} r="34" className="fill-card stroke-gold" strokeWidth="3" /><text x={x} y={y + 11} textAnchor="middle" fontSize="32" className="fill-primary font-serif">{l}</text></g>)}
-    </svg>
-  );
-}
-
 function Landing() {
+  const [scene, setScene] = useState("foret");
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [msg, setMsg] = useState("");
@@ -40,42 +29,47 @@ function Landing() {
     const r = up ? await supabase.auth.signUp({ email, password: pw }) : await supabase.auth.signInWithPassword({ email, password: pw });
     setMsg(r.error ? r.error.message : up && !r.data.session ? "Vérifiez votre boîte mail pour confirmer votre compte." : "");
   };
-  const steps = [["1", "Répondez", "Quelques questions simples : prénoms, parents, enfants. Passez ce que vous ignorez."], ["2", "Admirez", "Votre arbre se dessine tout seul, avec drapeaux, liens de parenté et animaux de compagnie."], ["3", "Partagez", "Invitez vos proches : chacun complète l'arbre, en direct."]];
-  const styles = [["Nature", "#cfe0c8"], ["Héritage", "#e8d8b8"], ["Élégance", "#1f3a33"], ["Douceur", "#f6d9d6"], ["Minimal", "#ffffff"]];
+  const tiles = [["🧭", "Un assistant qui vous guide", "Six questions simples, jamais bloquantes : « Passer » est toujours là.", "md:col-span-2"], ["🌄", "Des paysages vivants", "Forêt d'automne, montagnes, coucher de soleil, prairie ou nuit étoilée : votre arbre vit dans un décor animé.", "md:row-span-2"], ["🌍", "Origines en drapeaux", "Chaque carte affiche les pays de la famille.", ""], ["🐾", "Les animaux aussi", "Chiens, chats, chevaux… ils ont leur carte.", ""], ["🤝", "Construisez à plusieurs", "Invitez vos proches, choisissez leurs droits, voyez les changements en direct.", "md:col-span-2"]];
   return (
-    <div className="grid-bg min-h-screen">
-      <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5"><Logo /><a href="#inscription" className={btn}>Créer mon arbre</a></header>
-      <main className="mx-auto max-w-6xl px-6">
-        <section className="grid gap-14 py-14 md:grid-cols-2 md:items-center">
+    <div className={`preset-${SCENES[scene].preset} bg-background text-foreground`}>
+      <section className="relative flex min-h-screen flex-col overflow-hidden">
+        <Scene id={scene} />
+        <header className="relative z-10 mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-5">
+          <div className="glass rounded-full border border-line px-5 py-2"><Logo /></div>
+          <a href="#inscription" className={btn}>Créer mon arbre</a>
+        </header>
+        <div className="relative z-10 mx-auto grid w-full max-w-6xl flex-1 items-center gap-10 px-6 py-8 md:grid-cols-[1.25fr_1fr]">
           <div>
-            <p className="text-xs font-bold uppercase tracking-widest text-accent">Généalogie, simplement</p>
-            <h1 className="mt-4 font-serif text-6xl leading-[0.95] text-primary md:text-7xl">Votre histoire mérite d'être <em className="text-accent">racontée.</em></h1>
-            <p className="mt-6 max-w-md text-lg text-muted-foreground">Construisez votre arbre généalogique simplement, explorez vos racines et gardez votre histoire familiale précieusement.</p>
-            <div className="mt-8 flex flex-wrap items-center gap-4"><a href="#inscription" className={btn}>Créer mon arbre gratuitement →</a><a href="#comment" className={ghost}>Voir comment ça marche</a></div>
-            <p className="mt-5 text-sm text-muted-foreground">Gratuit · Enregistré automatiquement · Prêt en 3 minutes</p>
+            <span className="glass inline-block rounded-full border border-line px-4 py-1 text-xs font-bold uppercase tracking-widest text-accent">Généalogie collaborative</span>
+            <h1 className="mt-6 font-serif text-7xl leading-[0.88] text-primary md:text-[8.5rem]">Votre histoire<br /><em className="text-accent">racontée.</em></h1>
+            <p className="mt-6 max-w-md text-lg">Un arbre généalogique qui se dessine en quelques réponses, dans un paysage qui vous ressemble, et que toute la famille complète ensemble.</p>
+            <div className="mt-8 flex flex-wrap gap-3"><a href="#inscription" className={btn}>Créer mon arbre gratuitement →</a><a href="#comment" className={ghost + " glass"}>Découvrir</a></div>
           </div>
-          <Hero />
-        </section>
-        <section id="comment" className="py-14">
-          <h2 className="text-center font-serif text-5xl text-primary">Simple comme une conversation</h2>
-          <div className="mt-10 grid gap-6 md:grid-cols-3">
-            {steps.map(([n, t, d]) => (
-              <div key={n} className="rounded-3xl border border-line bg-card p-8 shadow-sm">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary font-serif text-2xl text-primary-foreground">{n}</div>
-                <h3 className="mt-5 font-serif text-3xl font-semibold">{t}</h3>
-                <p className="mt-2 text-muted-foreground">{d}</p>
+          <div className="relative hidden h-[420px] md:block">
+            {[["Henri", "Grand-père", "🇫🇷", "left-0 top-2 -rotate-6"], ["Sophie", "Mère", "🇵🇹", "right-2 top-28 rotate-3"], ["Lucas", "Vous", "🇫🇷 🇲🇺", "left-14 bottom-2 -rotate-2"]].map(([n, r, f, c], i) => (
+              <div key={n} style={{ animationDelay: `${i * 1.3}s` }} className={`glass fx-float absolute w-44 rounded-2xl border border-line p-4 text-center shadow-xl ${c}`}>
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-muted to-line/60 font-serif text-2xl text-primary ring-2 ring-gold/40">{n[0]}</div>
+                <h3 className="mt-2 font-serif text-xl font-semibold">{n}</h3><p className="text-xs italic text-muted-foreground">{r}</p><p>{f}</p>
               </div>
             ))}
           </div>
+        </div>
+        <div className="relative z-10 mx-auto mb-8 flex flex-wrap items-center justify-center gap-2 px-4">
+          <span className="text-sm font-bold">Choisissez votre paysage :</span>
+          {Object.entries(SCENES).map(([k, x]) => <button key={k} onClick={() => setScene(k)} className={`glass rounded-full border px-4 py-2 text-sm ${k === scene ? "border-primary font-bold" : "border-line"}`}>{x.icon} {x.name}</button>)}
+        </div>
+      </section>
+      <main className="mx-auto max-w-6xl px-6">
+        <section id="comment" className="py-20">
+          <h2 className="text-center font-serif text-5xl text-primary md:text-6xl">Tout pour raconter votre famille</h2>
+          <div className="mt-12 grid gap-5 md:grid-cols-4">
+            {tiles.map(([i, t, d, c]) => <div key={t} className={`rounded-3xl border border-line bg-card p-8 shadow-sm ${c}`}><div className="text-4xl">{i}</div><h3 className="mt-4 font-serif text-3xl font-semibold">{t}</h3><p className="mt-2 text-muted-foreground">{d}</p></div>)}
+          </div>
         </section>
-        <section className="py-14 text-center">
-          <h2 className="font-serif text-5xl text-primary">Un arbre à votre image</h2>
-          <p className="mt-3 text-muted-foreground">5 styles à changer d'un clic, quand vous voulez.</p>
-          <div className="mt-8 flex flex-wrap justify-center gap-4">{styles.map(([l, c]) => <div key={l} className="w-36 rounded-2xl border border-line bg-card p-3 shadow-sm"><div className="h-20 rounded-xl border border-line" style={{ background: c }} /><p className="mt-2 font-serif text-xl">{l}</p></div>)}</div>
-        </section>
-        <section id="inscription" className="mx-auto max-w-md py-14">
-          <div className="space-y-3 rounded-3xl border border-line bg-card p-8 shadow-lg">
-            <h2 className="font-serif text-3xl font-semibold">Créer mon arbre</h2>
+        <section id="inscription" className="mx-auto max-w-md pb-20">
+          <div className="space-y-3 rounded-3xl border border-line bg-card p-8 shadow-xl">
+            <h2 className="font-serif text-4xl font-semibold">Créer mon arbre</h2>
+            <p className="text-sm text-muted-foreground">Gratuit · Enregistré automatiquement · Prêt en 3 minutes</p>
             <input className={inp} type="email" placeholder="Votre email" value={email} onChange={(e) => setEmail(e.target.value)} />
             <input className={inp} type="password" placeholder="Mot de passe (6 caractères minimum)" value={pw} onChange={(e) => setPw(e.target.value)} />
             <button className={btn + " w-full"} onClick={() => go(true)}>Créer mon arbre gratuitement →</button>
@@ -84,7 +78,7 @@ function Landing() {
           </div>
         </section>
       </main>
-      <footer className="py-8 text-center text-sm text-muted-foreground">Mon Arbre Généalogique · fait avec soin pour les familles</footer>
+      <footer className="pb-8 text-center text-sm text-muted-foreground">Mon Arbre Généalogique · fait avec soin pour les familles</footer>
     </div>
   );
 }
@@ -158,14 +152,14 @@ function Wizard({ session, onDone }: { session: Session; onDone: () => void }) {
   ][step];
 
   return (
-    <div className="grid-bg min-h-screen">
-      <div className="mx-auto max-w-2xl px-6 py-6">
+    <div className="preset-nature relative min-h-screen"><Scene id="prairie" className="fixed inset-0" />
+      <div className="relative mx-auto max-w-2xl px-6 py-6">
         <Logo />
         <div className="mt-5 flex gap-2">{titles.map((_, i) => <div key={i} className={`h-1 flex-1 rounded ${i <= step ? "bg-primary" : "bg-line"}`} />)}</div>
         <p className="mt-8 text-xs font-bold uppercase tracking-widest text-accent">Étape {step + 1} sur 6</p>
         <h1 className="mt-2 font-serif text-5xl text-primary">{titles[step]}</h1>
         <p className="mt-2 text-muted-foreground">{hints[step]}</p>
-        <div className="mt-8 rounded-3xl border border-line bg-card p-6 shadow-sm">{body}</div>
+        <div className="mt-8 glass rounded-3xl border border-line p-6 shadow-lg">{body}</div>
         <div className="mt-8 flex items-center justify-between">
           <button disabled={!step} className="text-sm disabled:opacity-30" onClick={() => setStep(step - 1)}>← Retour</button>
           <div className="flex items-center gap-4">
@@ -305,18 +299,18 @@ function Canvas({ tree, session }: { tree: Tree; session: Session | null }) {
   };
 
   return (
-    <div className={`preset-${t.settings?.preset || "nature"} flex h-screen flex-col bg-background text-foreground`}>
-      <header className="z-30 flex flex-wrap items-center gap-3 border-b border-line bg-card px-4 py-2">
+    <div className={`preset-${(SCENES[t.settings?.preset ?? ""] ?? SCENES.prairie).preset} flex h-screen flex-col bg-background text-foreground`}>
+      <header className="z-30 flex flex-wrap items-center gap-3 glass border-b border-line px-4 py-2">
         <Logo />
         <form onSubmit={search} className="ml-auto"><input className={inp + " !w-44 !py-2"} placeholder="🔍 Rechercher" value={q} onChange={(e) => setQ(e.target.value)} /></form>
-        <select className={ghost} value={t.settings?.preset || "nature"} onChange={(e) => upTree({ settings: { ...t.settings, preset: e.target.value } })} disabled={!canAdmin}>
-          {[["nature", "Nature"], ["heritage", "Héritage"], ["elegance", "Élégance"], ["douceur", "Douceur"], ["minimal", "Minimal"]].map(([k, l]) => <option key={k} value={k}>🎨 {l}</option>)}
+        <select className={ghost} value={SCENES[t.settings?.preset ?? ""] ? t.settings.preset : "prairie"} onChange={(e) => upTree({ settings: { ...t.settings, preset: e.target.value } })} disabled={!canAdmin}>
+          {Object.entries(SCENES).map(([k, x]) => <option key={k} value={k}>{x.icon} {x.name}</option>)}
         </select>
         {canAdmin && <button className={ghost} onClick={() => setShare(true)}>Partager</button>}
         {session && <button className={ghost} onClick={() => supabase.auth.signOut()}>Quitter</button>}
       </header>
 
-      <div ref={box} className="grid-bg relative flex-1 touch-none select-none overflow-hidden"
+      <div ref={box} className="relative flex-1 touch-none select-none overflow-hidden"
         onPointerDown={(e) => { drag.current = { x: e.clientX, y: e.clientY, moved: false }; }}
         onPointerMove={(e) => {
           if (e.buttons !== 1) return;
@@ -327,13 +321,14 @@ function Canvas({ tree, session }: { tree: Tree; session: Session | null }) {
         }}
         onWheel={(e) => { const r = box.current!.getBoundingClientRect(); zoom(Math.exp(-e.deltaY * 0.0015), e.clientX - r.left, e.clientY - r.top); }}
         onClick={() => { if (!drag.current.moved) setSel(null); }}>
+        <Scene id={SCENES[t.settings?.preset ?? ""] ? t.settings.preset! : "prairie"} dx={v.x} dy={v.y} />
         <div style={{ transform: `translate(${v.x}px,${v.y}px) scale(${v.k})`, transformOrigin: "0 0" }} className="absolute left-0 top-0">
           <svg className="pointer-events-none absolute left-0 top-0 overflow-visible" width="1" height="1">
             {people.map((p) => {
               const c = pos.get(p.id)!, ps = p.parent_ids.map((i) => pos.get(i)).filter(Boolean) as { x: number; y: number }[];
               if (!c || !ps.length) return null;
               const px = ps.reduce((a, b) => a + b.x, 0) / ps.length + W / 2, py = ps[0].y + H, my = py + (c.y - py) / 2;
-              return <path key={p.id} d={`M${px},${py} V${my} H${c.x + W / 2} V${c.y}`} fill="none" stroke="var(--color-line)" strokeWidth="2.5" strokeLinejoin="round" />;
+              return <path key={p.id} d={`M${px},${py} V${my} H${c.x + W / 2} V${c.y}`} fill="none" stroke="var(--color-primary)" strokeOpacity="0.55" strokeWidth="3" strokeLinejoin="round" />;
             })}
             {people.flatMap((p) => p.spouse_ids.filter((s) => p.id < s).map((s) => {
               const a = pos.get(p.id), b = pos.get(s);
@@ -349,7 +344,7 @@ function Canvas({ tree, session }: { tree: Tree; session: Session | null }) {
             return (
               <div key={p.id} style={{ left: c.x, top: c.y, width: W, height: H }}
                 onClick={(e) => { e.stopPropagation(); if (!drag.current.moved) setSel(on ? null : p.id); }}
-                className={`absolute cursor-pointer rounded-2xl border bg-card p-3 text-center shadow-md transition-shadow hover:shadow-xl ${on ? "border-primary ring-2 ring-primary/30" : "border-line"} ${p.id === rootId ? "border-t-4 border-t-gold" : ""}`}>
+                className={`absolute cursor-pointer glass rounded-2xl border p-3 text-center shadow-md transition-shadow hover:shadow-xl ${on ? "border-primary ring-2 ring-primary/30" : "border-line"} ${p.id === rootId ? "border-t-4 border-t-gold" : ""}`}>
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-muted to-line/60 font-serif text-2xl text-primary ring-2 ring-gold/40">{p.kind === "pet" ? SPECIES[p.species || "autre"] : (p.first_name[0] || "?").toUpperCase()}</div>
                 <h3 className="mt-2 font-serif text-lg font-semibold leading-tight">{p.first_name} <span className="uppercase">{p.last_name}</span></h3>
                 <p className="text-xs text-muted-foreground">{[p.birth?.slice(-4), p.death && "† " + p.death.slice(-4)].filter(Boolean).join(" – ")}</p>
@@ -365,7 +360,7 @@ function Canvas({ tree, session }: { tree: Tree; session: Session | null }) {
             );
           })}
         </div>
-        <div className="absolute bottom-5 left-5 flex items-center gap-1 rounded-full border border-line bg-card px-3 py-1 text-sm shadow">
+        <div className="absolute bottom-5 left-5 flex items-center gap-1 glass rounded-full border border-line px-3 py-1 text-sm shadow">
           <button className="px-2" onClick={() => zoom(0.8)}>−</button>
           <span className="w-10 text-center text-xs">{Math.round(v.k * 100)}%</span>
           <button className="px-2" onClick={() => zoom(1.25)}>+</button>
