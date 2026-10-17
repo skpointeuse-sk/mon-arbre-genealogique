@@ -3,7 +3,7 @@ export type Person = {
   first_name: string; last_name: string; gender: "m" | "f" | "u";
   birth: string | null; birth_time: string | null; birth_place: string | null;
   death: string | null; job: string | null; notes: string | null;
-  origins: string[]; parent_ids: string[]; spouse_ids: string[];
+  photo_path: string | null; origins: string[]; parent_ids: string[]; spouse_ids: string[];
 };
 export type Tree = { id: string; title: string; root_id: string | null; link_access: string; settings: { preset?: string } };
 
