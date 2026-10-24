@@ -4,6 +4,7 @@ import { Navigate, Outlet, createRootRoute, createRoute, createRouter, useNaviga
 import { Landing } from "./Landing";
 import { Wizard } from "./Wizard";
 import { TreeView } from "./TreeView";
+import { LegalPage, PrivacyPage } from "./Legal";
 import { Mark } from "./icons";
 import { useSession } from "./session";
 import { myTreeQuery, sharedTreeQuery } from "./queries";
@@ -90,6 +91,8 @@ const routeTree = rootRoute.addChildren([
   createRoute({ getParentRoute: () => rootRoute, path: "/creer", component: CreatePage }),
   createRoute({ getParentRoute: () => rootRoute, path: "/arbre", component: TreePage }),
   createRoute({ getParentRoute: () => rootRoute, path: "/partage/$treeId", component: SharedPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: "/mentions-legales", component: LegalPage }),
+  createRoute({ getParentRoute: () => rootRoute, path: "/confidentialite", component: PrivacyPage }),
 ]);
 
 export const router = createRouter({ routeTree, defaultPreload: false });
