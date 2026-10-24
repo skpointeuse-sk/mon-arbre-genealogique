@@ -4,7 +4,8 @@ import { frError } from "./ui";
 import { Mark } from "./icons";
 import { PersonCard } from "./card";
 import type { Person } from "./lib";
-import { Scene } from "./scenes";
+import { PhotoScene, Scene } from "./scenes";
+import { DECORS, decorOf, decorSrc, decorSrcSet, saveDecor, savedDecor } from "./decors";
 import { AMBIANCES, saveAmbiance, savedAmbiance } from "./themes";
 import { Album } from "./Album";
 
@@ -51,7 +52,19 @@ export function Landing() {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok?: boolean } | null>(null);
   const [amb, setAmb] = useState(savedAmbiance);
+  const [photo, setPhoto] = useState(savedDecor);
+  // Six photos du catalogue à essayer dès l'accueil ; les autres sont dans l'arbre, bouton « Décor ».
+  const trial = DECORS.filter((d) => ["lavande", "cerisier", "lac-aube", "mer-couchant", "village-neige", "voie-lactee"].includes(d.id));
+  const choosePhoto = (id: string) => {
+    const d = decorOf(id)!;
+    setPhoto(id);
+    saveDecor(id);
+    setAmb(d.palette);
+    saveAmbiance(d.palette);
+  };
   const choose = (k: string) => {
+    setPhoto(null);
+    saveDecor(null);
     setAmb(k);
     saveAmbiance(k);
   };
@@ -90,8 +103,12 @@ export function Landing() {
   };
 
   return (
-    <div className="landing" data-ambiance={amb}>
-      <Scene id={amb} className="scene-fixed" />
+    <div className={"landing" + (photo ? " has-photo" : "")} data-ambiance={amb}>
+      {photo ? (
+        <PhotoScene src={decorSrc(photo, 1920)} srcSet={decorSrcSet(photo)} className="scene-fixed" />
+      ) : (
+        <Scene id={amb} className="scene-fixed" />
+      )}
       <header className="landing-bar">
         <span className="brand">
           <Mark /> Mon Arbre Généalogique
@@ -183,10 +200,20 @@ export function Landing() {
           <fieldset className="amb-pick">
             <legend>Essayez une ambiance</legend>
             {Object.entries(AMBIANCES).map(([k, a]) => (
-              <label key={k} className={k === amb ? "on" : ""}>
-                <input type="radio" name="ambiance" value={k} checked={k === amb} onChange={() => choose(k)} />
+              <label key={k} className={!photo && k === amb ? "on" : ""}>
+                <input type="radio" name="ambiance" value={k} checked={!photo && k === amb} onChange={() => choose(k)} />
                 <span className="amb-swatch" data-ambiance={k} aria-hidden="true" />
                 {a.name}
+              </label>
+            ))}
+          </fieldset>
+          <fieldset className="amb-pick amb-photos">
+            <legend>ou une photo</legend>
+            {trial.map((d) => (
+              <label key={d.id} className={photo === d.id ? "on" : ""} title={d.name}>
+                <input type="radio" name="ambiance" value={d.id} checked={photo === d.id} onChange={() => choosePhoto(d.id)} />
+                <img src={decorSrc(d.id, 480)} alt="" width={480} height={300} loading="lazy" />
+                <span className="sr">{d.name}</span>
               </label>
             ))}
           </fieldset>

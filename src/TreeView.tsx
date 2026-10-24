@@ -19,12 +19,13 @@ import {
   toGedcom,
   uid,
 } from "./lib";
-import { AMBIANCES, ambianceOf } from "./themes";
-import { Scene } from "./scenes";
+import { ambianceOf } from "./themes";
+import { PhotoScene, Scene } from "./scenes";
 import { PersonCard } from "./card";
 import { PersonPanel, type AddRel } from "./Panel";
-import { AddDialog, CalendarDialog, CheckDialog, ExportDialog, ShareDialog, UnionDialog } from "./dialogs";
-import { type ExportOpts, fileName, paintScene, sceneColors, sceneSvg, scopePeople } from "./exporting";
+import { AddDialog, CalendarDialog, CheckDialog, DecorDialog, ExportDialog, ShareDialog, UnionDialog } from "./dialogs";
+import { type ExportOpts, fileName, loadPhoto, paintPhoto, paintScene, photoSvg, sceneColors, sceneSvg, scopePeople } from "./exporting";
+import { decorOf, decorSrc, decorSrcSet } from "./decors";
 import { parseGedcom } from "./gedcom";
 import { Icon, Mark } from "./icons";
 import { frError, useUi } from "./ui";
@@ -44,6 +45,8 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
   const [scope, setScope] = useState<ExportOpts | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
   const [history, setHistory] = useState(false);
+  const [decorOpen, setDecorOpen] = useState(false);
+  const [ownUrl, setOwnUrl] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [sel, setSel] = useState<string | null>(null);
   const [add, setAdd] = useState<{ rel: AddRel; of: Person } | null>(null);
@@ -82,6 +85,18 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
   const byId = useMemo(() => new Map(people.map((p) => [p.id, p])), [people]);
   const selected = sel ? (byId.get(sel) ?? null) : null;
   const ambiance = ambianceOf(t.settings?.preset);
+  const decor = decorOf(t.settings?.decor);
+  const decorPath = t.settings?.decorPath ?? null;
+  const ownPath = t.settings?.ownPath ?? decorPath;
+  // Photo de décor envoyée par la famille : bucket privé, lien signé pour une heure.
+  useEffect(() => {
+    if (!ownPath) return setOwnUrl(null);
+    supabase.storage
+      .from("tree-media")
+      .createSignedUrl(ownPath, 3600)
+      .then(({ data }) => setOwnUrl(data?.signedUrl ?? null));
+  }, [ownPath]);
+  const photoUrl = decorPath ? ownUrl : decor ? decorSrc(decor.id, 1920) : null;
   useEffect(() => {
     document.documentElement.dataset.ambiance = ambiance;
     return () => {
@@ -326,6 +341,17 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
     if (error) return say(frError(error.message), "error");
     setT((o) => ({ ...o, ...d }) as Tree);
   };
+  const uploadDecor = async (f: File) => {
+    try {
+      const path = `${t.id}/decor-${Date.now()}.webp`;
+      const { error } = await supabase.storage.from("tree-media").upload(path, await compress(f, 2000, 0.8), { contentType: "image/webp" });
+      if (error) return say(frError(error.message), "error");
+      await upTree({ settings: { ...(t.settings ?? {}), decor: null, decorPath: path, ownPath: path } });
+      say("Votre photo est maintenant le décor de l'arbre.");
+    } catch {
+      say("Cette image ne peut pas être lue. Utilisez une photo JPEG, PNG ou WebP de moins de 20 Mo.", "error");
+    }
+  };
   const invite = async (email: string, r: string) => {
     const { error } = await supabase
       .from("tree_invites")
@@ -364,7 +390,11 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
         const url = await lib.toSvg(inner.current!, opts);
         const raw = decodeURIComponent(url.slice(url.indexOf(",") + 1));
         const esc = t.title.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
-        const bg = o.scene ? sceneSvg(w, h, ambiance) : `<rect width="${w}" height="${h}" fill="${sceneColors().paper}"/>`;
+        const bg = o.scene
+          ? photoUrl
+            ? await photoSvg(w, h, photoUrl)
+            : sceneSvg(w, h, ambiance)
+          : `<rect width="${w}" height="${h}" fill="${sceneColors().paper}"/>`;
         const head = `<text x="40" y="62" font-family="Georgia, serif" font-size="30" font-weight="600" fill="${sceneColors().ink}">${esc}</text>`;
         const svg = raw.replace(/<svg[^>]*>/, (m) => m + bg + head);
         download(URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" })), name);
@@ -375,7 +405,8 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
         c.height = tree.height;
         const ctx = c.getContext("2d")!;
         ctx.scale(tree.width / w, tree.height / h);
-        if (o.scene) paintScene(ctx, w, h, ambiance);
+        if (o.scene && photoUrl) paintPhoto(ctx, w, h, await loadPhoto(photoUrl));
+        else if (o.scene) paintScene(ctx, w, h, ambiance);
         else {
           ctx.fillStyle = sceneColors().paper;
           ctx.fillRect(0, 0, w, h);
@@ -609,17 +640,17 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
         </button>
       )}
       {canAdmin && (
-        <label className="tool tool-select">
+        <button
+          title="Décor"
+          className="tool"
+          onClick={() => {
+            setMenu(false);
+            setDecorOpen(true);
+          }}
+        >
           <Icon name="layers" />
-          <span className="sr">Ambiance</span>
-          <select value={ambiance} onChange={(e) => upTree({ settings: { ...(t.settings ?? {}), preset: e.target.value } })}>
-            {Object.entries(AMBIANCES).map(([k, x]) => (
-              <option key={k} value={k}>
-                {x.name}
-              </option>
-            ))}
-          </select>
-        </label>
+          <span>Décor</span>
+        </button>
       )}
       {canAdmin && (
         <button
@@ -707,7 +738,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
   );
 
   return (
-    <div className="app" data-ambiance={ambiance}>
+    <div className={"app" + (photoUrl ? " has-photo" : "")} data-ambiance={ambiance}>
       <header className="topbar">
         <div className="topbar-id">
           <Mark size={26} />
@@ -764,7 +795,11 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
           if (e.target === box.current && !gesture.current.moved) setSel(null);
         }}
       >
-        <Scene id={ambiance} dx={v.x} dy={v.y} />
+        {photoUrl ? (
+          <PhotoScene src={photoUrl} srcSet={decor && !decorPath ? decorSrcSet(decor.id) : undefined} dx={v.x} dy={v.y} />
+        ) : (
+          <Scene id={ambiance} dx={v.x} dy={v.y} />
+        )}
 
         {!loaded && (
           <p className="stage-msg" role="status">
@@ -947,6 +982,15 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
           if (f) importGed(f);
         }}
       />
+      {decorOpen && (
+        <DecorDialog
+          settings={{ preset: ambiance, ...(t.settings ?? {}) }}
+          ownUrl={ownUrl}
+          onPick={(s) => upTree({ settings: { ...(t.settings ?? {}), ...s } })}
+          onUpload={uploadDecor}
+          onClose={() => setDecorOpen(false)}
+        />
+      )}
       {history && session && <HistoryDialog treeId={t.id} me={session.user.id} onClose={() => setHistory(false)} />}
       {exportOpen && (
         <ExportDialog

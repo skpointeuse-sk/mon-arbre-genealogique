@@ -17,3 +17,19 @@ for (const f of readdirSync(src).filter((x) => /\.(jpe?g|png|webp)$/i.test(x))) 
     console.log(`${name}-${w}.webp`, `${info.width}x${info.height}`, `${Math.round(info.size / 1024)} Ko`);
   }
 }
+
+// Décors de fond : public/decors/<nom>-480.webp (vignette du choix), -1280 (téléphone) et -1920 (grand écran).
+const dsrc = new URL("../assets-src/decors/", import.meta.url);
+const dout = new URL("../public/decors/", import.meta.url);
+mkdirSync(dout, { recursive: true });
+for (const f of readdirSync(dsrc).filter((x) => /\.jpe?g$/i.test(x))) {
+  const name = f.replace(/\.[^.]+$/, "");
+  for (const w of [480, 1280, 1920]) {
+    const info = await sharp(new URL(f, dsrc).pathname.replace(/^\/(\w:)/, "$1"))
+      .rotate()
+      .resize({ width: w, withoutEnlargement: true })
+      .webp({ quality: w === 480 ? 70 : 60 })
+      .toFile(new URL(`${name}-${w}.webp`, dout).pathname.replace(/^\/(\w:)/, "$1"));
+    console.log(`décor ${name}-${w}.webp`, `${Math.round(info.size / 1024)} Ko`);
+  }
+}

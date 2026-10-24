@@ -43,3 +43,27 @@ export function Scene({ id, dx = 0, dy = 0, className = "" }: { id: string; dx?:
     </div>
   );
 }
+
+/* Décor photo : la photo couvre l'écran et bouge à peine avec l'arbre ; un voile aux couleurs
+   de l'ambiance garde les cartes et les traits lisibles. */
+export function PhotoScene({
+  src,
+  srcSet,
+  dx = 0,
+  dy = 0,
+  className = "",
+}: {
+  src: string;
+  srcSet?: string;
+  dx?: number;
+  dy?: number;
+  className?: string;
+}) {
+  const px = Math.max(-600, Math.min(600, dx)) * 0.015;
+  const py = Math.max(-300, Math.min(300, dy)) * 0.015;
+  return (
+    <div className={"scene scene-photo " + className} aria-hidden="true">
+      <img src={src} srcSet={srcSet} sizes="100vw" alt="" decoding="async" style={{ translate: `${px}px ${py}px` }} />
+    </div>
+  );
+}

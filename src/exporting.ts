@@ -143,3 +143,39 @@ export const fileName = (title: string, f: Format) =>
     .replace(/[^a-zA-Z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
     .toLowerCase() || "mon-arbre") + (f === "a1" || f === "a2" ? `-${f}.pdf` : `.${f}`);
+
+/* Décor photo dans les exports : la photo couvre le fond, avec le même voile qu'à l'écran. */
+export async function loadPhoto(url: string) {
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.src = url;
+  await img.decode();
+  return img;
+}
+const veil = (a: number) => sceneColors().paper.replace("rgb(", "rgba(").replace(")", `,${a})`);
+export function paintPhoto(ctx: CanvasRenderingContext2D, w: number, h: number, img: HTMLImageElement) {
+  const k = Math.max(w / img.naturalWidth, h / img.naturalHeight);
+  const iw = img.naturalWidth * k,
+    ih = img.naturalHeight * k;
+  ctx.drawImage(img, (w - iw) / 2, (h - ih) / 2, iw, ih);
+  ctx.fillStyle = veil(0.16);
+  ctx.fillRect(0, 0, w, h);
+  const top = ctx.createLinearGradient(0, 0, 0, h * 0.22);
+  top.addColorStop(0, veil(0.55));
+  top.addColorStop(1, veil(0));
+  ctx.fillStyle = top;
+  ctx.fillRect(0, 0, w, h);
+}
+export async function photoSvg(w: number, h: number, url: string) {
+  const blob = await (await fetch(url)).blob();
+  const data = await new Promise<string>((res) => {
+    const r = new FileReader();
+    r.onload = () => res(String(r.result));
+    r.readAsDataURL(blob);
+  });
+  return (
+    `<defs><linearGradient id="mag-voile" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${veil(0.55)}"/><stop offset="0.22" stop-color="${veil(0)}"/></linearGradient></defs>` +
+    `<image href="${data}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice"/>` +
+    `<rect width="${w}" height="${h}" fill="${veil(0.16)}"/><rect width="${w}" height="${h}" fill="url(#mag-voile)"/>`
+  );
+}

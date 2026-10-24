@@ -22,7 +22,10 @@ export type Person = {
 };
 /* Ligne à insérer dans la table people : seuls les champs connus à la création sont remplis. */
 export type NewPerson = Partial<Person> & Pick<Person, "id" | "tree_id" | "kind" | "gender" | "origins" | "parent_ids" | "spouse_ids">;
-export type Tree = { id: string; title: string; root_id: string | null; link_access: string; settings: { preset?: string } | null };
+export type Tree = { id: string; title: string; root_id: string | null; link_access: string; settings: TreeSettings | null };
+/* preset : paysage animé (et palette des couleurs). decor : photo du catalogue.
+   ownPath : photo envoyée par la famille ; decorPath vaut ownPath quand c'est elle qui est affichée. */
+export type TreeSettings = { preset?: string; decor?: string | null; decorPath?: string | null; ownPath?: string | null };
 export type Union = {
   tree_id: string;
   person_a: string;
@@ -495,19 +498,19 @@ export const download = (href: string, name: string) => {
   a.download = name;
   a.click();
 };
-export const compress = (f: File) =>
+export const compress = (f: File, max = 800, quality = 0.85) =>
   new Promise<Blob>((res, rej) => {
     if (!f.type.startsWith("image/") || f.size > 20 * 1024 * 1024) return rej(new Error("type"));
     const img = new Image(),
       url = URL.createObjectURL(f);
     img.onload = () => {
-      const k = Math.min(1, 800 / Math.max(img.width, img.height)),
+      const k = Math.min(1, max / Math.max(img.width, img.height)),
         c = document.createElement("canvas");
       c.width = Math.round(img.width * k);
       c.height = Math.round(img.height * k);
       c.getContext("2d")!.drawImage(img, 0, 0, c.width, c.height);
       URL.revokeObjectURL(url);
-      c.toBlob((b) => (b ? res(b) : rej(new Error("canvas"))), "image/webp", 0.85);
+      c.toBlob((b) => (b ? res(b) : rej(new Error("canvas"))), "image/webp", quality);
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);

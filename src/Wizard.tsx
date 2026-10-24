@@ -5,6 +5,7 @@ import { type NewPerson, type Person, split, uid } from "./lib";
 import { frError, useUi } from "./ui";
 import { Icon, Mark } from "./icons";
 import { savedAmbiance } from "./themes";
+import { savedDecor } from "./decors";
 
 function ListEditor({ items, set, label }: { items: string[]; set: (x: string[]) => void; label: string }) {
   return (
@@ -79,7 +80,11 @@ export function Wizard({ session, onDone }: { session: Session; onDone: () => vo
     const me = split(v.me);
     const { data: t, error } = await supabase
       .from("trees")
-      .insert({ title: `Famille ${me.last_name || me.first_name}`, owner_id: session.user.id, settings: { preset: savedAmbiance() } })
+      .insert({
+        title: `Famille ${me.last_name || me.first_name}`,
+        owner_id: session.user.id,
+        settings: { preset: savedAmbiance(), decor: savedDecor() },
+      })
       .select()
       .single();
     if (error) {

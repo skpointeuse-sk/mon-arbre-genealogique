@@ -5,6 +5,10 @@ import { checkFamily } from "./check";
 import { type Depth, type ExportOpts, type Format, type View, FORMAT_LABEL } from "./exporting";
 import { ADD_LABEL, type AddRel } from "./Panel";
 import { Members } from "./members";
+import { AMBIANCES } from "./themes";
+import { Scene } from "./scenes";
+import { DECORS, decorSrc } from "./decors";
+import type { TreeSettings } from "./lib";
 
 export function AddDialog({
   rel,
@@ -376,6 +380,109 @@ export function ExportDialog({
           </button>
         </div>
       </form>
+    </Modal>
+  );
+}
+
+/* Le décor de l'arbre : un paysage animé, une photo du catalogue ou une photo de la famille.
+   Chaque clic s'applique tout de suite derrière la fenêtre. */
+export function DecorDialog({
+  settings,
+  ownUrl,
+  onPick,
+  onUpload,
+  onClose,
+}: {
+  settings: TreeSettings;
+  ownUrl: string | null;
+  onPick: (s: TreeSettings) => void;
+  onUpload: (f: File) => Promise<void>;
+  onClose: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const photo = settings.decorPath ? "own" : (settings.decor ?? null);
+  return (
+    <Modal title="Décor de l'arbre" onClose={onClose} wide>
+      <div className="stack decor">
+        <section aria-labelledby="decor-anim">
+          <h3 id="decor-anim">Paysages animés</h3>
+          <div className="decor-grid decor-grid-anim">
+            {Object.entries(AMBIANCES).map(([k, a]) => (
+              <button
+                key={k}
+                type="button"
+                className="decor-choice"
+                aria-pressed={!photo && settings.preset === k}
+                onClick={() => onPick({ preset: k, decor: null, decorPath: null })}
+              >
+                <span className="decor-thumb decor-mini" data-ambiance={k} aria-hidden="true">
+                  <Scene id={k} />
+                </span>
+                <span>{a.name}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+        <section aria-labelledby="decor-photos">
+          <h3 id="decor-photos">Photos</h3>
+          <div className="decor-grid">
+            {DECORS.map((d) => (
+              <button
+                key={d.id}
+                type="button"
+                className="decor-choice"
+                aria-pressed={photo === d.id}
+                onClick={() => onPick({ preset: d.palette, decor: d.id, decorPath: null })}
+              >
+                <img className="decor-thumb" src={decorSrc(d.id, 480)} alt="" loading="lazy" width={480} height={300} />
+                <span>{d.name}</span>
+              </button>
+            ))}
+          </div>
+        </section>
+        <section aria-labelledby="decor-own">
+          <h3 id="decor-own">Votre photo</h3>
+          <p className="muted">
+            Un paysage de votre région, la maison de famille, le jardin des grands-parents. La photo est réduite, assombrie légèrement pour
+            que l'arbre reste lisible, et rangée avec les photos de l'arbre.
+          </p>
+          <div className="decor-own">
+            {ownUrl && (
+              <button
+                type="button"
+                className="decor-choice"
+                aria-pressed={photo === "own"}
+                onClick={() => onPick({ decor: null, decorPath: settings.ownPath ?? settings.decorPath })}
+              >
+                <img className="decor-thumb" src={ownUrl} alt="" />
+                <span>Votre photo</span>
+              </button>
+            )}
+            <label className="btn btn-quiet">
+              {busy ? "Envoi…" : ownUrl ? "Choisir une autre photo" : "Choisir une photo"}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="sr"
+                disabled={busy}
+                onChange={async (e) => {
+                  const f = e.target.files?.[0];
+                  e.target.value = "";
+                  if (!f) return;
+                  setBusy(true);
+                  await onUpload(f);
+                  setBusy(false);
+                }}
+              />
+            </label>
+          </div>
+        </section>
+        <div className="dialog-actions">
+          <button className="btn btn-primary" onClick={onClose}>
+            Terminé
+          </button>
+        </div>
+      </div>
     </Modal>
   );
 }
