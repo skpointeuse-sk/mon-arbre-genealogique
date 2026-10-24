@@ -49,6 +49,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
   const [share, setShare] = useState(false);
   const [cal, setCal] = useState(false);
   const [menu, setMenu] = useState(false);
+  const [files, setFiles] = useState(false);
   const [un, setUn] = useState<{ a: string; b: string } | null>(null);
   const [check, setCheck] = useState(false);
   const gedInput = useRef<HTMLInputElement>(null);
@@ -439,30 +440,8 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
   const unionOf = (a: string, b: string) =>
     unions.find((u) => (u.person_a === a && u.person_b === b) || (u.person_a === b && u.person_b === a));
 
-  const toolbar = (
+  const fileTools = (
     <>
-      {canEdit && (
-        <div className="tool-group">
-          <button className="tool" onClick={undo} title="Annuler (Ctrl+Z)">
-            <Icon name="undo" />
-            <span>Annuler</span>
-          </button>
-          <button className="tool" onClick={redo} title="Rétablir (Ctrl+Y)">
-            <Icon name="redo" />
-            <span>Rétablir</span>
-          </button>
-        </div>
-      )}
-      <button
-        className="tool"
-        onClick={() => {
-          setMenu(false);
-          setCal(true);
-        }}
-      >
-        <Icon name="calendar" />
-        <span>Anniversaires</span>
-      </button>
       <button className="tool" onClick={exportPng}>
         <Icon name="download" />
         <span>Image PNG</span>
@@ -480,8 +459,59 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
           }}
         >
           <Icon name="upload" />
-          <span>Importer</span>
+          <span>Importer un GEDCOM</span>
         </button>
+      )}
+    </>
+  );
+
+  // Dans la barre du haut, les fichiers passent dans un menu et Annuler/Rétablir en icônes : tout tient en 1280 px.
+  const tools = (sheet: boolean) => (
+    <>
+      {canEdit && (
+        <div className="tool-group">
+          <button className="tool" onClick={undo} title="Annuler (Ctrl+Z)">
+            <Icon name="undo" />
+            <span className={sheet ? undefined : "sr"}>Annuler</span>
+          </button>
+          <button className="tool" onClick={redo} title="Rétablir (Ctrl+Y)">
+            <Icon name="redo" />
+            <span className={sheet ? undefined : "sr"}>Rétablir</span>
+          </button>
+        </div>
+      )}
+      <button
+        className="tool"
+        onClick={() => {
+          setMenu(false);
+          setCal(true);
+        }}
+      >
+        <Icon name="calendar" />
+        <span>Anniversaires</span>
+      </button>
+      {sheet ? (
+        fileTools
+      ) : (
+        <div
+          className="tool-menu"
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) setFiles(false);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setFiles(false);
+          }}
+        >
+          <button className="tool" aria-expanded={files} aria-controls="file-tools" onClick={() => setFiles((f) => !f)}>
+            <Icon name="download" />
+            <span>Fichier</span>
+          </button>
+          {files && (
+            <div id="file-tools" className="tool-pop" onClick={() => setFiles(false)}>
+              {fileTools}
+            </div>
+          )}
+        </div>
       )}
       <button
         className="tool"
@@ -602,7 +632,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
         </div>
         <div className="topbar-search">{search}</div>
         <nav className="topbar-tools" aria-label="Outils">
-          {toolbar}
+          {tools(false)}
         </nav>
         <div className="topbar-mobile">
           <button className="icon-btn" aria-label="Rechercher" onClick={() => setSearchMobile(true)}>
@@ -793,7 +823,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
                 <Icon name="close" />
               </button>
             </header>
-            <div className="sheet-tools">{toolbar}</div>
+            <div className="sheet-tools">{tools(true)}</div>
           </nav>
         </div>
       )}

@@ -862,8 +862,28 @@ fieldset:disabled {
   text-decoration: none;
   white-space: nowrap;
 }
-.tool:hover {
+.tool:hover,
+.tool[aria-expanded="true"] {
   background: var(--rule-soft);
+}
+.tool-menu {
+  position: relative;
+}
+.tool-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  display: grid;
+  min-width: 210px;
+  padding: 6px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(20, 30, 25, 0.16);
+}
+.tool-pop .tool {
+  justify-content: flex-start;
 }
 .tool-select {
   position: relative;
@@ -949,6 +969,13 @@ fieldset:disabled {
     height: 1px;
     overflow: hidden;
     clip: rect(0 0 0 0);
+  }
+  .topbar-tools .tool-pop .tool span {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
   }
 }
 @media (max-width: 900px) {
