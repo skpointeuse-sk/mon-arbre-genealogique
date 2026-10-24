@@ -31,7 +31,7 @@ import { Icon, Mark } from "./icons";
 import { frError, useUi } from "./ui";
 import { useTreeData } from "./useTreeData";
 import { KMIN, useView } from "./useView";
-import { usePresence } from "./usePresence";
+import { initials, usePresence } from "./usePresence";
 import { HistoryDialog } from "./history";
 
 const PANEL_W = 400;
@@ -717,7 +717,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
           <div className="presence" role="status" aria-label={`En ce moment sur l'arbre : ${others.map((o) => o.name).join(", ")}`}>
             {others.slice(0, 4).map((o) => (
               <span key={o.id} title={o.name} aria-hidden="true">
-                {o.name.slice(0, 2).toUpperCase()}
+                {initials(o.name)}
               </span>
             ))}
           </div>

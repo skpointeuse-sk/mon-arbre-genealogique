@@ -5,6 +5,7 @@ import { checkFamily } from "./check";
 import { fileName, scopePeople } from "./exporting";
 import { rolesFor } from "./members";
 import { describe as tell } from "./history";
+import { initials } from "./usePresence";
 
 const person = (id: string, first: string, extra: Partial<Person> = {}): Person => ({
   id,
@@ -189,5 +190,14 @@ describe("phrases de l'historique", () => {
     );
     expect(tell({ ...e, kind: "modification", target: "membre", fields: ["viewer"] })).toBe("a passé Paul Martin en « lecture seule »");
     expect(tell({ ...e, label: "", kind: "modification", target: "arbre", fields: ["settings"] })).toBe("a changé ambiance");
+  });
+});
+
+describe("initiales de présence", () => {
+  it("prend la première lettre de chaque mot", () => {
+    expect(initials("Testeur A")).toBe("TA");
+    expect(initials("jean-marc")).toBe("JM");
+    expect(initials("Jeanne")).toBe("JE");
+    expect(initials("")).toBe("?");
   });
 });

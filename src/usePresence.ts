@@ -4,6 +4,15 @@ import { supabase } from "./supabase";
 
 export type Present = { id: string; name: string };
 
+/* « Testeur A » donne « TA », « Jeanne » donne « JE ». */
+export const initials = (name: string) => {
+  const w = name
+    .trim()
+    .split(/[\s._-]+/)
+    .filter(Boolean);
+  return (w.length > 1 ? w[0][0] + w[1][0] : (w[0] ?? "?").slice(0, 2)).toUpperCase();
+};
+
 /* Qui regarde l'arbre en ce moment. Canal privé « arbre:<id> » : la base n'y laisse entrer
    que les membres connectés (politiques sur realtime.messages). */
 export function usePresence(treeId: string, session: Session | null) {
