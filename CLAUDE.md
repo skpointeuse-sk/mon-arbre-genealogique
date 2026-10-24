@@ -60,7 +60,7 @@ Landing plein écran avec **5 paysages animés** (prairie, forêt d'automne, mon
 4. (Réglé en phase 3) Export PNG/JPG/SVG/PDF A2-A1 avec paysage, profondeur et ascendance/descendance. Le SVG embarque l'arbre en foreignObject : pas de vrai vectoriel pour les cartes. Pas de livret de famille PDF.
 5. Restent à faire : carte des origines, souvenirs vocaux (colonne `audio_path` prête), livret de famille PDF. Faits : import GEDCOM, vérificateur, présence, membres, historique (depuis le 24/10/2026).
 6. Fait : tests unitaires et e2e, lint, boundary d'erreur, audit axe-core sans défaut. Reste : e-mails d'invitation non envoyés (l'invité est rattaché à la connexion seulement), suppression de compte en libre-service (aujourd'hui par email, promis sous 30 jours dans `/confidentialite`).
-7. « Confirm email » est désactivé côté Supabase pour les tests : à réactiver avant le lancement public, avec un SMTP personnalisé (l'envoi intégré de Supabase est limité à quelques e-mails par heure).
+7. (Réglé le 24/10/2026) « Confirm email » est actif. Envoi par Resend (forfait gratuit : 100 e-mails/jour, 3 000/mois) depuis `ne-pas-repondre@arbre.skdigital.fr`, SMTP `smtp.resend.com:465` réglé dans Supabase. Domaine `arbre.skdigital.fr` (DKIM + SPF chez OVH). Modèles en français dans `supabase/templates/` (`node supabase/templates/build.mjs --write`, puis coller dans Authentication > Emails > Templates). Redirect URL autorisée : `https://mon-arbre-genealogique-9v1t.vercel.app/**`. Parcours mot de passe oublié : `/nouveau-mot-de-passe`.
 
 ## 8. Décisions produit non négociables
 
