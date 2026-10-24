@@ -3,3 +3,6 @@ node_modules
 package-lock.json
 test-results
 playwright-report
+
+# Copies exactes des modèles collés dans Supabase (générées par build.mjs)
+supabase/templates/*.html

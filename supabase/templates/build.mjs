@@ -17,34 +17,72 @@ ${button ? `<tr><td style="padding:24px 32px 8px;"><a href="${url}" style="displ
 </td></tr></table></body></html>`;
 
 const ignore = "Si vous n'êtes pas à l'origine de cette demande, ignorez simplement ce message : rien ne sera modifié.";
-const link = (u) => `Le bouton ne fonctionne pas ? Copiez ce lien dans votre navigateur :<br><span style="word-break:break-all;color:#2d5a3d;">${u}</span>`;
+const link = (u) =>
+  `Le bouton ne fonctionne pas ? Copiez ce lien dans votre navigateur :<br><span style="word-break:break-all;color:#2d5a3d;">${u}</span>`;
 
 export const TEMPLATES = {
   "confirm-sign-up": {
     subject: "Confirmez votre adresse e-mail",
-    html: page("Bienvenue !", "Il reste une étape pour commencer votre arbre : confirmer que cette adresse e-mail est bien la vôtre.", "Confirmer mon adresse", "{{ .ConfirmationURL }}", `${link("{{ .ConfirmationURL }}")}<br><br>${ignore}`),
+    html: page(
+      "Bienvenue !",
+      "Il reste une étape pour commencer votre arbre : confirmer que cette adresse e-mail est bien la vôtre.",
+      "Confirmer mon adresse",
+      "{{ .ConfirmationURL }}",
+      `${link("{{ .ConfirmationURL }}")}<br><br>${ignore}`,
+    ),
   },
   "invite-user": {
     subject: "On vous invite sur Mon Arbre Généalogique",
-    html: page("Vous êtes invité(e)", "Un membre de votre famille vous invite à découvrir son arbre généalogique et à le compléter avec lui.", "Accepter l'invitation", "{{ .ConfirmationURL }}", `${link("{{ .ConfirmationURL }}")}<br><br>Vous ne connaissez pas l'expéditeur ? Ignorez ce message.`),
+    html: page(
+      "Vous êtes invité(e)",
+      "Un membre de votre famille vous invite à découvrir son arbre généalogique et à le compléter avec lui.",
+      "Accepter l'invitation",
+      "{{ .ConfirmationURL }}",
+      `${link("{{ .ConfirmationURL }}")}<br><br>Vous ne connaissez pas l'expéditeur ? Ignorez ce message.`,
+    ),
   },
   "magic-link": {
     subject: "Votre lien de connexion",
-    html: page("Connexion à votre arbre", "Cliquez sur le bouton pour vous connecter, sans mot de passe. Le lien ne sert qu'une fois.", "Me connecter", "{{ .ConfirmationURL }}", `Ou saisissez ce code : <strong style="font-size:16px;color:#1d2a22;">{{ .Token }}</strong><br><br>${ignore}`),
+    html: page(
+      "Connexion à votre arbre",
+      "Cliquez sur le bouton pour vous connecter, sans mot de passe. Le lien ne sert qu'une fois.",
+      "Me connecter",
+      "{{ .ConfirmationURL }}",
+      `Ou saisissez ce code : <strong style="font-size:16px;color:#1d2a22;">{{ .Token }}</strong><br><br>${ignore}`,
+    ),
   },
   "change-email-address": {
     subject: "Confirmez votre nouvelle adresse e-mail",
-    html: page("Changement d'adresse", "Vous avez demandé à remplacer {{ .Email }} par {{ .NewEmail }}. Confirmez pour terminer le changement.", "Confirmer la nouvelle adresse", "{{ .ConfirmationURL }}", `${link("{{ .ConfirmationURL }}")}<br><br>${ignore}`),
+    html: page(
+      "Changement d'adresse",
+      "Vous avez demandé à remplacer {{ .Email }} par {{ .NewEmail }}. Confirmez pour terminer le changement.",
+      "Confirmer la nouvelle adresse",
+      "{{ .ConfirmationURL }}",
+      `${link("{{ .ConfirmationURL }}")}<br><br>${ignore}`,
+    ),
   },
   "reset-password": {
     subject: "Choisissez un nouveau mot de passe",
-    html: page("Mot de passe oublié", "Pas de souci, cela arrive. Cliquez sur le bouton pour choisir un nouveau mot de passe.", "Choisir un nouveau mot de passe", "{{ .ConfirmationURL }}", `${link("{{ .ConfirmationURL }}")}<br><br>${ignore}`),
+    html: page(
+      "Mot de passe oublié",
+      "Pas de souci, cela arrive. Cliquez sur le bouton pour choisir un nouveau mot de passe.",
+      "Choisir un nouveau mot de passe",
+      "{{ .ConfirmationURL }}",
+      `${link("{{ .ConfirmationURL }}")}<br><br>${ignore}`,
+    ),
   },
   reauthentication: {
     subject: "Votre code de confirmation",
-    html: page("Confirmez que c'est bien vous", `Saisissez ce code dans l'application pour continuer :<br><strong style="display:inline-block;margin-top:12px;font-size:26px;letter-spacing:4px;color:#1d2a22;">{{ .Token }}</strong>`, "", "", ignore),
+    html: page(
+      "Confirmez que c'est bien vous",
+      `Saisissez ce code dans l'application pour continuer :<br><strong style="display:inline-block;margin-top:12px;font-size:26px;letter-spacing:4px;color:#1d2a22;">{{ .Token }}</strong>`,
+      "",
+      "",
+      ignore,
+    ),
   },
 };
 
 if (process.argv[2] === "--write")
-  for (const [k, t] of Object.entries(TEMPLATES)) writeFileSync(new URL(`./${k}.html`, import.meta.url), `<!-- Sujet : ${t.subject} -->\n${t.html}\n`);
+  for (const [k, t] of Object.entries(TEMPLATES))
+    writeFileSync(new URL(`./${k}.html`, import.meta.url), `<!-- Sujet : ${t.subject} -->\n${t.html}\n`);
