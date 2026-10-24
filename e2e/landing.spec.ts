@@ -40,3 +40,21 @@ test("les pages légales s'ouvrent depuis l'accueil", async ({ page }, info) => 
   await expect(page.getByText("939 387 510 00018")).toBeVisible();
   await expect(page).toHaveTitle("Mentions légales, Mon Arbre Généalogique");
 });
+
+test("mot de passe oublié : message neutre, puis page du nouveau mot de passe", async ({ page }) => {
+  let asked = "";
+  await page.route("**/auth/v1/recover**", (route) => {
+    asked = route.request().postDataJSON()?.email ?? "";
+    return route.fulfill({ json: {} });
+  });
+  await page.goto("/");
+  await page.getByRole("tab", { name: "Se connecter" }).click();
+  await page.getByRole("button", { name: "Mot de passe oublié ?" }).click();
+  await expect(page.getByText("Saisissez d'abord votre adresse email")).toBeVisible();
+  await page.getByLabel("Email").fill("jeanne@example.com");
+  await page.getByRole("button", { name: "Mot de passe oublié ?" }).click();
+  await expect(page.getByText("Si un compte existe avec cette adresse")).toBeVisible();
+  expect(asked).toBe("jeanne@example.com");
+  await page.goto("/nouveau-mot-de-passe");
+  await expect(page.getByText("Ce lien a expiré ou a déjà servi")).toBeVisible();
+});

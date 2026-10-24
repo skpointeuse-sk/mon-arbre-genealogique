@@ -63,12 +63,29 @@ export function Landing() {
     setMsg(null);
     const r =
       mode === "up"
-        ? await supabase.auth.signUp({ email: email.trim(), password: pw })
+        ? await supabase.auth.signUp({ email: email.trim(), password: pw, options: { emailRedirectTo: location.origin + "/" } })
         : await supabase.auth.signInWithPassword({ email: email.trim(), password: pw });
     setBusy(false);
     if (r.error) return setMsg({ text: frError(r.error.message) });
     if (mode === "up" && !r.data.session)
       setMsg({ ok: true, text: "Compte créé. Ouvrez le lien reçu par email pour le confirmer, puis connectez-vous ici." });
+  };
+
+  // Même message que le compte existe ou non : on ne révèle pas quelles adresses sont inscrites.
+  const forgot = async () => {
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setMsg({ text: "Saisissez d'abord votre adresse email, puis cliquez à nouveau." });
+    setBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), { redirectTo: location.origin + "/nouveau-mot-de-passe" });
+    setBusy(false);
+    if (error && !/rate|too many/i.test(error.message)) return setMsg({ text: frError(error.message) });
+    setMsg(
+      error
+        ? { text: frError(error.message) }
+        : {
+            ok: true,
+            text: "Si un compte existe avec cette adresse, un e-mail vient de partir. Ouvrez le lien qu'il contient pour choisir un nouveau mot de passe.",
+          },
+    );
   };
 
   return (
@@ -153,6 +170,11 @@ export function Landing() {
             <button className="btn btn-primary btn-block" disabled={busy}>
               {busy ? "Un instant…" : mode === "up" ? "Créer mon arbre" : "Ouvrir mon arbre"}
             </button>
+            {mode === "in" && (
+              <button type="button" className="link auth-forgot" onClick={forgot} disabled={busy}>
+                Mot de passe oublié ?
+              </button>
+            )}
           </form>
         </section>
 

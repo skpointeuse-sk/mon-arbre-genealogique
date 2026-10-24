@@ -1840,3 +1840,12 @@ fieldset:disabled {
     padding: 28px 16px 48px;
   }
 }
+.auth-forgot {
+  justify-self: center;
+  margin-top: 4px;
+  font-weight: 400;
+}
+.auth-recover {
+  max-width: 420px;
+  margin-top: 20px;
+}
