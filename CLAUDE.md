@@ -35,7 +35,7 @@ Routes : `/` accueil (redirige vers `/arbre` si connecté) · `/creer` assistant
 
 Fichiers : `App.tsx` (fournisseurs + boundary d'erreur) · `router.tsx` · `session.tsx` · `queries.ts` · `Landing.tsx` · `Wizard.tsx` · `TreeView.tsx` (canevas et actions) · `useTreeData.ts` / `useView.ts` (données, zoom et déplacement) · `Panel.tsx` (fiche) · `dialogs.tsx` (ajout, union, partage, anniversaires, vérification, export) · `members.tsx` (membres et droits) · `history.tsx` (historique) · `usePresence.ts` (présence) · `exporting.ts` (choix des personnes exportées, paysage en canvas/SVG) · `gedcom.ts` (import) · `check.ts` (`checkFamily`) · `Legal.tsx` (`/mentions-legales`, `/confidentialite`) · `card.tsx` · `ui.tsx` · `icons.tsx` · `themes.ts` · `scenes.tsx` · `lib.ts` · tests `lib.test.ts`, `features.test.ts`.
 
-Commandes : `npm run build` (vérifie les types puis compile) · `npm run check` (types, lint, tests, formatage) · `npm run test:e2e` (Playwright, 1440 px et 390 px ; `npm run test:prod` rejoue les mêmes tests sur le site en ligne avec sa CSP ; Supabase simulé dans `e2e/mock.ts`, dont une session de propriétaire avec `mockOwner` ; audit axe-core WCAG 2.2 AA dans `e2e/a11y.spec.ts`). L'intégration continue est prête dans `docs/ci.yml` mais pas encore active : le jeton GitHub du PC n'a pas le droit `workflow` (voir §7).
+Commandes : `npm run build` (vérifie les types puis compile) · `npm run check` (types, lint, tests, formatage) · `npm run test:e2e` (Playwright, 1440 px et 390 px ; `npm run test:prod` rejoue les mêmes tests sur le site en ligne avec sa CSP ; Supabase simulé dans `e2e/mock.ts`, dont une session de propriétaire avec `mockOwner` ; audit axe-core WCAG 2.2 AA dans `e2e/a11y.spec.ts`). L'intégration continue tourne sur GitHub Actions à chaque push sur `main` (`.github/workflows/ci.yml`).
 
 > Pièges : `main` ne compilait plus avant le 24/10 (`scenes.tsx` envoyé dans un sous-dossier). Les 5 paysages animés de la v5 ne sont pas dans cette version : à réintégrer en Phase 1. Sur Windows, `git` doit garder `core.autocrlf=false` dans ce dépôt.
 
@@ -53,7 +53,7 @@ Landing plein écran avec **5 paysages animés** (prairie, forêt d'automne, mon
 
 ## 7. Dette technique & limites connues (à traiter)
 
-0. Restes de Phase 0 : (a) activer la CI : copier `docs/ci.yml` vers `.github/workflows/ci.yml` après avoir donné le droit `workflow` au jeton GitHub ; (b) tests RLS automatisés et migration de base du schéma existant : à faire quand `npx supabase login` sera fait ; (c) types Supabase générés : même blocage.
+0. Restes de Phase 0 : (a) CI active depuis le 24/10/2026 ; (b) tests RLS automatisés et migration de base du schéma existant : à faire quand `npx supabase login` sera fait ; (c) types Supabase générés : même blocage.
 1. `TreeView.tsx` reste gros (canevas + actions) → extraire hooks et services Supabase.
 2. Layout (`layout()` dans `lib.ts`) simplifié : pas de recentrage des parents au-dessus des enfants, frères/sœurs sans parents flottent, unions multiples/demi-fratries mal gérées, pas de minimap, pas de zoom tactile (pinch), pas de virtualisation (≥ 300 personnes à tester).
 3. (Réglé en phase 2) L'annulation restaure aussi les unions.
