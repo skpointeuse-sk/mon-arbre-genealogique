@@ -25,8 +25,20 @@ const P: Record<string, string> = {
 
 export function Icon({ name, size = 20, label }: { name: keyof typeof P | string; size?: number; label?: string }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"
-      aria-hidden={label ? undefined : true} role={label ? "img" : undefined} aria-label={label} focusable="false">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden={label ? undefined : true}
+      role={label ? "img" : undefined}
+      aria-label={label}
+      focusable="false"
+    >
       <path d={P[name] ?? ""} />
     </svg>
   );
@@ -36,7 +48,10 @@ export function Icon({ name, size = 20, label }: { name: keyof typeof P | string
 export function Paw({ size = 22 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <ellipse cx="6" cy="10" rx="2" ry="2.6" /><ellipse cx="10" cy="6" rx="2" ry="2.6" /><ellipse cx="14.5" cy="6" rx="2" ry="2.6" /><ellipse cx="18.5" cy="10" rx="2" ry="2.6" />
+      <ellipse cx="6" cy="10" rx="2" ry="2.6" />
+      <ellipse cx="10" cy="6" rx="2" ry="2.6" />
+      <ellipse cx="14.5" cy="6" rx="2" ry="2.6" />
+      <ellipse cx="18.5" cy="10" rx="2" ry="2.6" />
       <path d="M12.2 11c-2.7 0-5.7 3.6-5.7 6.1 0 1.6 1.2 2.4 2.6 2.4 1.3 0 2-.6 3.1-.6s1.8.6 3.1.6c1.4 0 2.6-.8 2.6-2.4 0-2.5-3-6.1-5.7-6.1Z" />
     </svg>
   );

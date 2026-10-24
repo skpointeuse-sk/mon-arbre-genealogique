@@ -1,7 +1,26 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as RKE } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
-import { type NewPerson, type Person, type Tree, type Union, H, ROW, W, clean, compress, download, fullName, layout, lifespan, norm, relation, split, toGedcom, uid } from "./lib";
+import {
+  type NewPerson,
+  type Person,
+  type Tree,
+  type Union,
+  H,
+  ROW,
+  W,
+  clean,
+  compress,
+  download,
+  fullName,
+  layout,
+  lifespan,
+  norm,
+  relation,
+  split,
+  toGedcom,
+  uid,
+} from "./lib";
 import { AMBIANCES, ambianceOf, reliefPaths } from "./themes";
 import { PersonCard } from "./card";
 import { PersonPanel, type AddRel } from "./Panel";
@@ -10,7 +29,8 @@ import { Icon, Mark } from "./icons";
 import { frError, useUi } from "./ui";
 
 type View = { x: number; y: number; k: number };
-const KMIN = 0.15, KMAX = 2;
+const KMIN = 0.15,
+  KMAX = 2;
 const PANEL_W = 400;
 const isWide = () => window.innerWidth >= 900;
 
@@ -42,7 +62,11 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
 
   const load = useCallback(async () => {
     const { data, error } = await supabase.from("people").select("*").eq("tree_id", tree.id).order("created_at");
-    if (error) { setLoadError(frError(error.message)); setLoaded(true); return; }
+    if (error) {
+      setLoadError(frError(error.message));
+      setLoaded(true);
+      return;
+    }
     const ps = ((data as Person[]) || []).map(clean);
     setPeople(ps);
     setLoaded(true);
@@ -50,7 +74,9 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
     if (paths.length) {
       const { data: sg } = await supabase.storage.from("tree-media").createSignedUrls(paths, 3600);
       const m: Record<string, string> = {};
-      sg?.forEach((x) => { if (x.path && x.signedUrl) m[x.path] = x.signedUrl; });
+      sg?.forEach((x) => {
+        if (x.path && x.signedUrl) m[x.path] = x.signedUrl;
+      });
       setUrls(m);
     }
     const { data: u } = await supabase.from("unions").select("*").eq("tree_id", tree.id);
@@ -59,24 +85,38 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
 
   useEffect(() => {
     load();
-    const ch = supabase.channel("p-" + tree.id).on("postgres_changes", { event: "*", schema: "public", table: "people", filter: `tree_id=eq.${tree.id}` }, load).subscribe();
-    return () => { supabase.removeChannel(ch); };
+    const ch = supabase
+      .channel("p-" + tree.id)
+      .on("postgres_changes", { event: "*", schema: "public", table: "people", filter: `tree_id=eq.${tree.id}` }, load)
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
   }, [tree.id, load]);
   useEffect(() => {
-    if (session) supabase.from("tree_members").select("role").eq("tree_id", tree.id).eq("user_id", session.user.id).maybeSingle().then(({ data }) => setRole(data?.role ?? null));
+    if (session)
+      supabase
+        .from("tree_members")
+        .select("role")
+        .eq("tree_id", tree.id)
+        .eq("user_id", session.user.id)
+        .maybeSingle()
+        .then(({ data }) => setRole(data?.role ?? null));
   }, [tree.id, session]);
 
   const canEdit = (!!role && role !== "viewer") || (!!session && t.link_access === "edit");
   const canAdmin = role === "owner" || role === "co_lead";
-  const rootId = t.root_id && people.some((p) => p.id === t.root_id) ? t.root_id : people[0]?.id ?? null;
+  const rootId = t.root_id && people.some((p) => p.id === t.root_id) ? t.root_id : (people[0]?.id ?? null);
   const L = useMemo(() => layout(people, rootId), [people, rootId]);
   const rels = useMemo(() => new Map(people.map((p) => [p.id, relation(people, rootId, p)])), [people, rootId]);
   const byId = useMemo(() => new Map(people.map((p) => [p.id, p])), [people]);
-  const selected = sel ? byId.get(sel) ?? null : null;
+  const selected = sel ? (byId.get(sel) ?? null) : null;
   const ambiance = ambianceOf(t.settings?.preset);
   useEffect(() => {
     document.documentElement.dataset.ambiance = ambiance;
-    return () => { delete document.documentElement.dataset.ambiance; };
+    return () => {
+      delete document.documentElement.dataset.ambiance;
+    };
   }, [ambiance]);
 
   // Proches de la personne choisie : mis en avant, le reste s'estompe.
@@ -102,7 +142,8 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
     window.setTimeout(() => setAnim(false), 380);
   };
   const center = (id: string | null, k = vRef.current.k, withPanel = !!sel) => {
-    const c = id ? L.pos.get(id) : undefined, b = box.current;
+    const c = id ? L.pos.get(id) : undefined,
+      b = box.current;
     if (!c || !b) return;
     const w = b.clientWidth - (withPanel && isWide() ? PANEL_W : 0);
     const h = withPanel && !isWide() ? b.clientHeight * 0.42 : b.clientHeight;
@@ -115,11 +156,15 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
     animate({ k, x: (w - L.width * k) / 2, y: (h - L.height * k) / 2 + 10 });
   };
   const zoomAt = (f: number, cx?: number, cy?: number, smooth = false) => {
-    const b = box.current!, o = vRef.current;
-    const px = cx ?? b.clientWidth / 2, py = cy ?? b.clientHeight / 2;
-    const k = Math.min(KMAX, Math.max(KMIN, o.k * f)), r = k / o.k;
+    const b = box.current!,
+      o = vRef.current;
+    const px = cx ?? b.clientWidth / 2,
+      py = cy ?? b.clientHeight / 2;
+    const k = Math.min(KMAX, Math.max(KMIN, o.k * f)),
+      r = k / o.k;
     const nv = { k, x: px - (px - o.x) * r, y: py - (py - o.y) * r };
-    if (smooth) animate(nv); else setV(nv);
+    if (smooth) animate(nv);
+    else setV(nv);
   };
   const pan = (dx: number, dy: number) => animate({ ...vRef.current, x: vRef.current.x + dx, y: vRef.current.y + dy });
 
@@ -140,7 +185,8 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
     const wheel = (e: WheelEvent) => {
       e.preventDefault();
       const r = b.getBoundingClientRect();
-      if (e.ctrlKey || Math.abs(e.deltaY) >= Math.abs(e.deltaX)) zoomAt(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)), e.clientX - r.left, e.clientY - r.top);
+      if (e.ctrlKey || Math.abs(e.deltaY) >= Math.abs(e.deltaX))
+        zoomAt(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)), e.clientX - r.left, e.clientY - r.top);
       else setV((o) => ({ ...o, x: o.x - e.deltaX }));
     };
     b.addEventListener("wheel", wheel, { passive: false });
@@ -162,7 +208,8 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
     if (!prev) return;
     const cur = { x: e.clientX, y: e.clientY };
     if (pointers.current.size === 1) {
-      const dx = cur.x - prev.x, dy = cur.y - prev.y;
+      const dx = cur.x - prev.x,
+        dy = cur.y - prev.y;
       if (!gesture.current.moved && Math.abs(dx) + Math.abs(dy) < 3) return;
       gesture.current.moved = true;
       if (!box.current!.hasPointerCapture(e.pointerId)) box.current!.setPointerCapture(e.pointerId);
@@ -186,11 +233,19 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
     if (e.target !== box.current) return;
     const step = 80;
     const map: Record<string, () => void> = {
-      ArrowLeft: () => pan(step, 0), ArrowRight: () => pan(-step, 0), ArrowUp: () => pan(0, step), ArrowDown: () => pan(0, -step),
-      "+": () => zoomAt(1.25, undefined, undefined, true), "=": () => zoomAt(1.25, undefined, undefined, true), "-": () => zoomAt(0.8, undefined, undefined, true),
+      ArrowLeft: () => pan(step, 0),
+      ArrowRight: () => pan(-step, 0),
+      ArrowUp: () => pan(0, step),
+      ArrowDown: () => pan(0, -step),
+      "+": () => zoomAt(1.25, undefined, undefined, true),
+      "=": () => zoomAt(1.25, undefined, undefined, true),
+      "-": () => zoomAt(0.8, undefined, undefined, true),
       "0": fit,
     };
-    if (map[e.key]) { e.preventDefault(); map[e.key](); }
+    if (map[e.key]) {
+      e.preventDefault();
+      map[e.key]();
+    }
   };
 
   const select = (id: string | null, recenter = true) => {
@@ -201,21 +256,42 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
 
   /* ---------- Écritures (identiques à la version précédente) ---------- */
   const patch = (id: string, d: Record<string, unknown>) => supabase.from("people").update(d).eq("id", id);
-  const snap = () => { hist.current = { u: [...hist.current.u.slice(-29), people], r: [] }; };
+  const snap = () => {
+    hist.current = { u: [...hist.current.u.slice(-29), people], r: [] };
+  };
   const restore = async (rows: Person[]) => {
-    const keep = new Set(rows.map((p) => p.id)), gone = people.filter((p) => !keep.has(p.id)).map((p) => p.id);
+    const keep = new Set(rows.map((p) => p.id)),
+      gone = people.filter((p) => !keep.has(p.id)).map((p) => p.id);
     if (gone.length) await supabase.from("people").delete().in("id", gone);
     if (rows.length) await supabase.from("people").upsert(rows);
     load();
   };
-  const undo = async () => { const prev = hist.current.u.pop(); if (!prev) return say("Rien à annuler."); hist.current.r.push(people); await restore(prev); say("Modification annulée."); };
-  const redo = async () => { const nxt = hist.current.r.pop(); if (!nxt) return say("Rien à rétablir."); hist.current.u.push(people); await restore(nxt); say("Modification rétablie."); };
+  const undo = async () => {
+    const prev = hist.current.u.pop();
+    if (!prev) return say("Rien à annuler.");
+    hist.current.r.push(people);
+    await restore(prev);
+    say("Modification annulée.");
+  };
+  const redo = async () => {
+    const nxt = hist.current.r.pop();
+    if (!nxt) return say("Rien à rétablir.");
+    hist.current.u.push(people);
+    await restore(nxt);
+    say("Modification rétablie.");
+  };
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
       if (!canEdit || !(e.ctrlKey || e.metaKey) || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
       const key = e.key.toLowerCase();
-      if (key === "z" && !e.shiftKey) { e.preventDefault(); undo(); } else if (key === "y" || (key === "z" && e.shiftKey)) { e.preventDefault(); redo(); }
+      if (key === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if (key === "y" || (key === "z" && e.shiftKey)) {
+        e.preventDefault();
+        redo();
+      }
     };
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
@@ -226,14 +302,31 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
       const path = `${t.id}/${p.id}-${Date.now()}.webp`;
       const { error } = await supabase.storage.from("tree-media").upload(path, await compress(f), { contentType: "image/webp" });
       if (error) return say(frError(error.message), "error");
-      snap(); await patch(p.id, { photo_path: path }); load();
+      snap();
+      await patch(p.id, { photo_path: path });
+      load();
       say("Photo enregistrée.");
-    } catch { say("Cette image ne peut pas être lue. Utilisez une photo JPEG, PNG ou WebP de moins de 20 Mo.", "error"); }
+    } catch {
+      say("Cette image ne peut pas être lue. Utilisez une photo JPEG, PNG ou WebP de moins de 20 Mo.", "error");
+    }
   };
   const saveUnion = async (d: { type: string; date: string; place: string; notes: string }) => {
     if (!un) return false;
-    const { error } = await supabase.from("unions").upsert({ tree_id: t.id, person_a: un.a, person_b: un.b, type: d.type, date: d.date.trim() || null, place: d.place.trim() || null, notes: d.notes.trim() || null });
-    if (error) { say(frError(error.message), "error"); return false; }
+    const { error } = await supabase
+      .from("unions")
+      .upsert({
+        tree_id: t.id,
+        person_a: un.a,
+        person_b: un.b,
+        type: d.type,
+        date: d.date.trim() || null,
+        place: d.place.trim() || null,
+        notes: d.notes.trim() || null,
+      });
+    if (error) {
+      say(frError(error.message), "error");
+      return false;
+    }
     say("Union enregistrée.");
     load();
     return true;
@@ -241,10 +334,29 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
   const submitAdd = async (name: string, species: string) => {
     if (!add) return;
     const { rel, of } = add;
-    if (rel === "sibling" && !of.parent_ids.length) { say("Ajoutez d'abord un père ou une mère à cette personne.", "error"); return; }
+    if (rel === "sibling" && !of.parent_ids.length) {
+      say("Ajoutez d'abord un père ou une mère à cette personne.", "error");
+      return;
+    }
     snap();
-    const row: NewPerson = { id: uid(), tree_id: t.id, kind: "human", gender: "u", origins: [], parent_ids: [], spouse_ids: [], ...split(name, rel === "child" || rel === "sibling" || rel === "father" ? of.last_name : "") };
-    const ins = async () => { const { error } = await supabase.from("people").insert(row); if (error) { say(frError(error.message), "error"); return false; } return true; };
+    const row: NewPerson = {
+      id: uid(),
+      tree_id: t.id,
+      kind: "human",
+      gender: "u",
+      origins: [],
+      parent_ids: [],
+      spouse_ids: [],
+      ...split(name, rel === "child" || rel === "sibling" || rel === "father" ? of.last_name : ""),
+    };
+    const ins = async () => {
+      const { error } = await supabase.from("people").insert(row);
+      if (error) {
+        say(frError(error.message), "error");
+        return false;
+      }
+      return true;
+    };
     if (rel === "father" || rel === "mother") {
       row.gender = rel === "father" ? "m" : "f";
       const other = people.find((p) => of.parent_ids.includes(p.id));
@@ -263,7 +375,9 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
       row.parent_ids = [of.id, ...of.spouse_ids.slice(0, 1)];
       if (!(await ins())) return;
     } else {
-      row.kind = "pet"; row.species = species; row.parent_ids = [of.id];
+      row.kind = "pet";
+      row.species = species;
+      row.parent_ids = [of.id];
       if (!(await ins())) return;
     }
     setAdd(null);
@@ -271,15 +385,23 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
     say(`${row.first_name} a été ajouté${row.gender === "f" ? "e" : ""} à l'arbre.`);
   };
   const remove = async (p: Person) => {
-    if (!(await ask(`Supprimer ${fullName(p)} de l'arbre ? Ses liens avec les autres personnes seront retirés. Vous pourrez annuler juste après avec « Annuler ».`, "Supprimer"))) return;
+    if (
+      !(await ask(
+        `Supprimer ${fullName(p)} de l'arbre ? Ses liens avec les autres personnes seront retirés. Vous pourrez annuler juste après avec « Annuler ».`,
+        "Supprimer",
+      ))
+    )
+      return;
     snap();
     for (const o of people) {
       if (o.parent_ids.includes(p.id)) await patch(o.id, { parent_ids: o.parent_ids.filter((x) => x !== p.id) });
       if (o.spouse_ids.includes(p.id)) await patch(o.id, { spouse_ids: o.spouse_ids.filter((x) => x !== p.id) });
     }
     const { error } = await supabase.from("people").delete().eq("id", p.id);
-    if (error) say(frError(error.message), "error"); else say(`${fullName(p)} a été retiré de l'arbre.`);
-    setSel(null); load();
+    if (error) say(frError(error.message), "error");
+    else say(`${fullName(p)} a été retiré de l'arbre.`);
+    setSel(null);
+    load();
   };
   const upTree = async (d: Record<string, unknown>) => {
     const { error } = await supabase.from("trees").update(d).eq("id", t.id);
@@ -287,8 +409,13 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
     setT((o) => ({ ...o, ...d }) as Tree);
   };
   const invite = async (email: string, r: string) => {
-    const { error } = await supabase.from("tree_invites").insert({ tree_id: t.id, email: email.trim().toLowerCase(), role: r, invited_by: session!.user.id });
-    if (error) { say(frError(error.message), "error"); return false; }
+    const { error } = await supabase
+      .from("tree_invites")
+      .insert({ tree_id: t.id, email: email.trim().toLowerCase(), role: r, invited_by: session!.user.id });
+    if (error) {
+      say(frError(error.message), "error");
+      return false;
+    }
     say("Invitation enregistrée : la personne verra l'arbre en se connectant avec cet email.");
     return true;
   };
@@ -301,9 +428,17 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
     try {
       const { toPng } = await import("html-to-image");
       const bg = getComputedStyle(document.documentElement).getPropertyValue("--paper").trim() || "#eef0ea";
-      const url = await toPng(inner.current!, { width: L.width + 80, height: L.height + 120, pixelRatio: 2, backgroundColor: bg, style: { transform: "translate(40px,60px)", transition: "none" } });
+      const url = await toPng(inner.current!, {
+        width: L.width + 80,
+        height: L.height + 120,
+        pixelRatio: 2,
+        backgroundColor: bg,
+        style: { transform: "translate(40px,60px)", transition: "none" },
+      });
       download(url, "mon-arbre.png");
-    } catch { say("L'image n'a pas pu être créée. Réessayez, ou exportez en GEDCOM.", "error"); }
+    } catch {
+      say("L'image n'a pas pu être créée. Réessayez, ou exportez en GEDCOM.", "error");
+    }
     setSel(prevSel);
   };
   const exportGed = () => {
@@ -321,7 +456,12 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
     if (!n) return [];
     return people.filter((p) => norm(`${p.first_name} ${p.last_name} ${p.last_name} ${p.first_name}`).includes(n)).slice(0, 8);
   }, [q, people]);
-  const pick = (p: Person) => { setQ(""); setQOpen(false); setSearchMobile(false); go(p.id); };
+  const pick = (p: Person) => {
+    setQ("");
+    setQOpen(false);
+    setSearchMobile(false);
+    go(p.id);
+  };
 
   /* ---------- Rendu ---------- */
   const lines = useMemo(() => {
@@ -340,7 +480,8 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
         oy = adjacent ? l.y + H / 2 : l.y + H;
       } else {
         const low = ps.reduce((m, p) => (p.y > m.y ? p : m));
-        ox = low.x + W / 2; oy = low.y + H;
+        ox = low.x + W / 2;
+        oy = low.y + H;
       }
       const top = Math.min(...cs.map((c) => c.y));
       const n = rowFam.get(top) ?? 0;
@@ -355,59 +496,140 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
   }, [L]);
   const couples = useMemo(() => {
     const out: { a: Person; b: Person; x1: number; x2: number; y: number; arc: boolean }[] = [];
-    for (const p of people) for (const s of p.spouse_ids) {
-      if (p.id >= s) continue;
-      const q = byId.get(s), A = L.pos.get(p.id), B = L.pos.get(s);
-      if (!q || !A || !B) continue;
-      const [l, r] = A.x < B.x ? [A, B] : [B, A];
-      out.push({ a: p, b: q, x1: l.x + W, x2: r.x, y: l.y + H / 2, arc: A.y !== B.y || r.x - l.x - W > 40 });
-    }
+    for (const p of people)
+      for (const s of p.spouse_ids) {
+        if (p.id >= s) continue;
+        const q = byId.get(s),
+          A = L.pos.get(p.id),
+          B = L.pos.get(s);
+        if (!q || !A || !B) continue;
+        const [l, r] = A.x < B.x ? [A, B] : [B, A];
+        out.push({ a: p, b: q, x1: l.x + W, x2: r.x, y: l.y + H / 2, arc: A.y !== B.y || r.x - l.x - W > 40 });
+      }
     return out;
   }, [people, L, byId]);
-  const unionOf = (a: string, b: string) => unions.find((u) => (u.person_a === a && u.person_b === b) || (u.person_a === b && u.person_b === a));
+  const unionOf = (a: string, b: string) =>
+    unions.find((u) => (u.person_a === a && u.person_b === b) || (u.person_a === b && u.person_b === a));
 
   const toolbar = (
     <>
       {canEdit && (
         <div className="tool-group">
-          <button className="tool" onClick={undo} title="Annuler (Ctrl+Z)"><Icon name="undo" /><span>Annuler</span></button>
-          <button className="tool" onClick={redo} title="Rétablir (Ctrl+Y)"><Icon name="redo" /><span>Rétablir</span></button>
+          <button className="tool" onClick={undo} title="Annuler (Ctrl+Z)">
+            <Icon name="undo" />
+            <span>Annuler</span>
+          </button>
+          <button className="tool" onClick={redo} title="Rétablir (Ctrl+Y)">
+            <Icon name="redo" />
+            <span>Rétablir</span>
+          </button>
         </div>
       )}
-      <button className="tool" onClick={() => { setMenu(false); setCal(true); }}><Icon name="calendar" /><span>Anniversaires</span></button>
-      <button className="tool" onClick={exportPng}><Icon name="download" /><span>Image PNG</span></button>
-      <button className="tool" onClick={exportGed}><Icon name="download" /><span>Fichier GEDCOM</span></button>
+      <button
+        className="tool"
+        onClick={() => {
+          setMenu(false);
+          setCal(true);
+        }}
+      >
+        <Icon name="calendar" />
+        <span>Anniversaires</span>
+      </button>
+      <button className="tool" onClick={exportPng}>
+        <Icon name="download" />
+        <span>Image PNG</span>
+      </button>
+      <button className="tool" onClick={exportGed}>
+        <Icon name="download" />
+        <span>Fichier GEDCOM</span>
+      </button>
       {canAdmin && (
-        <label className="tool tool-select"><Icon name="layers" />
+        <label className="tool tool-select">
+          <Icon name="layers" />
           <span className="sr">Ambiance</span>
           <select value={ambiance} onChange={(e) => upTree({ settings: { ...(t.settings ?? {}), preset: e.target.value } })}>
-            {Object.entries(AMBIANCES).map(([k, x]) => <option key={k} value={k}>{x.name}</option>)}
+            {Object.entries(AMBIANCES).map(([k, x]) => (
+              <option key={k} value={k}>
+                {x.name}
+              </option>
+            ))}
           </select>
         </label>
       )}
-      {canAdmin && <button className="tool" onClick={() => { setMenu(false); setShare(true); }}><Icon name="share" /><span>Partager</span></button>}
-      {session ? <button className="tool" onClick={() => supabase.auth.signOut()}><Icon name="logout" /><span>Se déconnecter</span></button>
-        : <a className="tool" href="/"><Icon name="logout" /><span>Se connecter</span></a>}
+      {canAdmin && (
+        <button
+          className="tool"
+          onClick={() => {
+            setMenu(false);
+            setShare(true);
+          }}
+        >
+          <Icon name="share" />
+          <span>Partager</span>
+        </button>
+      )}
+      {session ? (
+        <button className="tool" onClick={() => supabase.auth.signOut()}>
+          <Icon name="logout" />
+          <span>Se déconnecter</span>
+        </button>
+      ) : (
+        <a className="tool" href="/">
+          <Icon name="logout" />
+          <span>Se connecter</span>
+        </a>
+      )}
     </>
   );
 
   const search = (
     <div className="search" role="combobox" aria-expanded={qOpen && matches.length > 0} aria-haspopup="listbox" aria-owns="search-list">
       <Icon name="search" size={18} />
-      <input type="search" placeholder="Rechercher une personne" aria-label="Rechercher une personne" value={q} autoFocus={searchMobile}
-        onChange={(e) => { setQ(e.target.value); setQOpen(true); setQi(0); }}
-        onFocus={() => setQOpen(true)} onBlur={() => setTimeout(() => setQOpen(false), 150)}
-        onKeyDown={(e) => {
-          if (e.key === "ArrowDown") { e.preventDefault(); setQi((i) => Math.min(i + 1, matches.length - 1)); }
-          else if (e.key === "ArrowUp") { e.preventDefault(); setQi((i) => Math.max(i - 1, 0)); }
-          else if (e.key === "Enter") { e.preventDefault(); if (matches[qi]) pick(matches[qi]); }
-          else if (e.key === "Escape") { setQ(""); setSearchMobile(false); }
+      <input
+        type="search"
+        placeholder="Rechercher une personne"
+        aria-label="Rechercher une personne"
+        value={q}
+        autoFocus={searchMobile}
+        onChange={(e) => {
+          setQ(e.target.value);
+          setQOpen(true);
+          setQi(0);
         }}
-        aria-activedescendant={matches[qi] ? "opt-" + matches[qi].id : undefined} aria-controls="search-list" />
+        onFocus={() => setQOpen(true)}
+        onBlur={() => setTimeout(() => setQOpen(false), 150)}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowDown") {
+            e.preventDefault();
+            setQi((i) => Math.min(i + 1, matches.length - 1));
+          } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            setQi((i) => Math.max(i - 1, 0));
+          } else if (e.key === "Enter") {
+            e.preventDefault();
+            if (matches[qi]) pick(matches[qi]);
+          } else if (e.key === "Escape") {
+            setQ("");
+            setSearchMobile(false);
+          }
+        }}
+        aria-activedescendant={matches[qi] ? "opt-" + matches[qi].id : undefined}
+        aria-controls="search-list"
+      />
       {qOpen && q.trim() && (
         <ul id="search-list" role="listbox" className="search-list">
           {matches.map((p, i) => (
-            <li key={p.id} id={"opt-" + p.id} role="option" aria-selected={i === qi} className={i === qi ? "on" : ""} onMouseDown={(e) => { e.preventDefault(); pick(p); }}>
+            <li
+              key={p.id}
+              id={"opt-" + p.id}
+              role="option"
+              aria-selected={i === qi}
+              className={i === qi ? "on" : ""}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                pick(p);
+              }}
+            >
               <span className="kin-name">{fullName(p)}</span>
               <span className="kin-meta">{[rels.get(p.id), lifespan(p)].filter(Boolean).join(", ")}</span>
             </li>
@@ -431,15 +653,29 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
           </div>
         </div>
         <div className="topbar-search">{search}</div>
-        <nav className="topbar-tools" aria-label="Outils">{toolbar}</nav>
+        <nav className="topbar-tools" aria-label="Outils">
+          {toolbar}
+        </nav>
         <div className="topbar-mobile">
-          <button className="icon-btn" aria-label="Rechercher" onClick={() => setSearchMobile(true)}><Icon name="search" /></button>
-          <button className="icon-btn" aria-label="Menu" aria-expanded={menu} onClick={() => setMenu(true)}><Icon name="menu" /></button>
+          <button className="icon-btn" aria-label="Rechercher" onClick={() => setSearchMobile(true)}>
+            <Icon name="search" />
+          </button>
+          <button className="icon-btn" aria-label="Menu" aria-expanded={menu} onClick={() => setMenu(true)}>
+            <Icon name="menu" />
+          </button>
         </div>
         {searchMobile && (
           <div className="mobile-search">
             {search}
-            <button className="link" onClick={() => { setSearchMobile(false); setQ(""); }}>Fermer</button>
+            <button
+              className="link"
+              onClick={() => {
+                setSearchMobile(false);
+                setQ("");
+              }}
+            >
+              Fermer
+            </button>
           </div>
         )}
       </header>
@@ -449,85 +685,201 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
         className={"stage" + (sel ? " has-panel" : "")}
         tabIndex={0}
         aria-label="Arbre généalogique. Flèches pour se déplacer, plus et moins pour zoomer, zéro pour tout afficher."
-        onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
         onKeyDown={onKey}
-        onClick={(e) => { if (e.target === box.current && !gesture.current.moved) setSel(null); }}
+        onClick={(e) => {
+          if (e.target === box.current && !gesture.current.moved) setSel(null);
+        }}
       >
         <svg className="relief" viewBox="0 0 1600 200" preserveAspectRatio="none" aria-hidden="true">
-          <path d={ridge1} className="relief-far" /><path d={ridge2} className="relief-near" />
+          <path d={ridge1} className="relief-far" />
+          <path d={ridge2} className="relief-near" />
         </svg>
 
-        {!loaded && <p className="stage-msg" role="status">Chargement de l'arbre…</p>}
-        {loaded && loadError && <p className="stage-msg form-error" role="alert">L'arbre n'a pas pu être chargé : {loadError}</p>}
+        {!loaded && (
+          <p className="stage-msg" role="status">
+            Chargement de l'arbre…
+          </p>
+        )}
+        {loaded && loadError && (
+          <p className="stage-msg form-error" role="alert">
+            L'arbre n'a pas pu être chargé : {loadError}
+          </p>
+        )}
         {loaded && !loadError && !people.length && <p className="stage-msg">Cet arbre ne contient encore personne.</p>}
 
-        <div ref={inner} className={"plane" + (anim ? " is-animating" : "")} style={{ transform: `translate(${v.x}px,${v.y}px) scale(${v.k})` }}>
+        <div
+          ref={inner}
+          className={"plane" + (anim ? " is-animating" : "")}
+          style={{ transform: `translate(${v.x}px,${v.y}px) scale(${v.k})` }}
+        >
           <svg className="links" width={L.width || 1} height={L.height || 1} aria-hidden="true">
-            {lines.map((l) => <path key={l.key} d={l.d} className={near ? (l.ids.includes(selected!.id) ? "on" : "off") : ""} />)}
-            {couples.map((c) => c.arc
-              ? <path key={c.a.id + c.b.id} className={"spouse " + (near ? (near.has(c.a.id) && near.has(c.b.id) && (c.a.id === sel || c.b.id === sel) ? "on" : "off") : "")}
-                  d={`M${c.x1 - W / 2},${c.y - H / 2} C${c.x1 - W / 2},${c.y - H / 2 - 40} ${c.x2 + W / 2},${c.y - H / 2 - 40} ${c.x2 + W / 2},${c.y - H / 2}`} />
-              : <line key={c.a.id + c.b.id} className={"spouse " + (near ? ((c.a.id === sel || c.b.id === sel) ? "on" : "off") : "")} x1={c.x1} y1={c.y} x2={c.x2} y2={c.y} />)}
+            {lines.map((l) => (
+              <path key={l.key} d={l.d} className={near ? (l.ids.includes(selected!.id) ? "on" : "off") : ""} />
+            ))}
+            {couples.map((c) =>
+              c.arc ? (
+                <path
+                  key={c.a.id + c.b.id}
+                  className={
+                    "spouse " + (near ? (near.has(c.a.id) && near.has(c.b.id) && (c.a.id === sel || c.b.id === sel) ? "on" : "off") : "")
+                  }
+                  d={`M${c.x1 - W / 2},${c.y - H / 2} C${c.x1 - W / 2},${c.y - H / 2 - 40} ${c.x2 + W / 2},${c.y - H / 2 - 40} ${c.x2 + W / 2},${c.y - H / 2}`}
+                />
+              ) : (
+                <line
+                  key={c.a.id + c.b.id}
+                  className={"spouse " + (near ? (c.a.id === sel || c.b.id === sel ? "on" : "off") : "")}
+                  x1={c.x1}
+                  y1={c.y}
+                  x2={c.x2}
+                  y2={c.y}
+                />
+              ),
+            )}
           </svg>
-          {couples.filter((c) => !c.arc).map((c) => {
-            const u = unionOf(c.a.id, c.b.id);
-            const broken = u && (u.type === "divorce" || u.type === "separation");
-            return (
-              <button key={"u" + c.a.id + c.b.id} className={"union" + (u ? " is-set" : "") + (broken ? " is-broken" : "")}
-                style={{ left: (c.x1 + c.x2) / 2, top: c.y }}
-                aria-label={`Union de ${c.a.first_name} et ${c.b.first_name}${u ? " : " + (u.type === "mariage" ? "mariage" : u.type) : ""}`}
-                onClick={(e) => { e.stopPropagation(); if (!gesture.current.moved) setUn({ a: c.a.id, b: c.b.id }); }}>
-                <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="7.5" cy="10" r="4.5" /><circle cx="12.5" cy="10" r="4.5" />{broken && <path d="M4 16 16 4" />}</svg>
-              </button>
-            );
-          })}
+          {couples
+            .filter((c) => !c.arc)
+            .map((c) => {
+              const u = unionOf(c.a.id, c.b.id);
+              const broken = u && (u.type === "divorce" || u.type === "separation");
+              return (
+                <button
+                  key={"u" + c.a.id + c.b.id}
+                  className={"union" + (u ? " is-set" : "") + (broken ? " is-broken" : "")}
+                  style={{ left: (c.x1 + c.x2) / 2, top: c.y }}
+                  aria-label={`Union de ${c.a.first_name} et ${c.b.first_name}${u ? " : " + (u.type === "mariage" ? "mariage" : u.type) : ""}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!gesture.current.moved) setUn({ a: c.a.id, b: c.b.id });
+                  }}
+                >
+                  <svg viewBox="0 0 20 20" aria-hidden="true">
+                    <circle cx="7.5" cy="10" r="4.5" />
+                    <circle cx="12.5" cy="10" r="4.5" />
+                    {broken && <path d="M4 16 16 4" />}
+                  </svg>
+                </button>
+              );
+            })}
           {people.map((p) => {
             const c = L.pos.get(p.id);
             if (!c) return null;
             return (
-              <PersonCard key={p.id} p={p} rel={rels.get(p.id) ?? ""} photo={p.photo_path ? urls[p.photo_path] : undefined}
-                root={p.id === rootId} selected={sel === p.id} dim={!!near && !near.has(p.id)}
+              <PersonCard
+                key={p.id}
+                p={p}
+                rel={rels.get(p.id) ?? ""}
+                photo={p.photo_path ? urls[p.photo_path] : undefined}
+                root={p.id === rootId}
+                selected={sel === p.id}
+                dim={!!near && !near.has(p.id)}
                 style={{ left: c.x, top: c.y }}
-                onSelect={() => { if (!gesture.current.moved) select(sel === p.id ? null : p.id, sel !== p.id); }} />
+                onSelect={() => {
+                  if (!gesture.current.moved) select(sel === p.id ? null : p.id, sel !== p.id);
+                }}
+              />
             );
           })}
         </div>
 
         <div className="zoom" onPointerDown={(e) => e.stopPropagation()}>
-          <button className="icon-btn" onClick={() => zoomAt(0.8, undefined, undefined, true)} aria-label="Dézoomer"><Icon name="minus" /></button>
-          <span className="zoom-level" aria-live="polite">{Math.round(v.k * 100)} %</span>
-          <button className="icon-btn" onClick={() => zoomAt(1.25, undefined, undefined, true)} aria-label="Zoomer"><Icon name="plus" /></button>
+          <button className="icon-btn" onClick={() => zoomAt(0.8, undefined, undefined, true)} aria-label="Dézoomer">
+            <Icon name="minus" />
+          </button>
+          <span className="zoom-level" aria-live="polite">
+            {Math.round(v.k * 100)} %
+          </span>
+          <button className="icon-btn" onClick={() => zoomAt(1.25, undefined, undefined, true)} aria-label="Zoomer">
+            <Icon name="plus" />
+          </button>
           <span className="zoom-sep" />
-          <button className="icon-btn" onClick={fit} aria-label="Tout afficher" title="Tout afficher"><Icon name="fit" /></button>
-          <button className="btn btn-quiet btn-small" onClick={() => center(rootId, Math.max(v.k, 0.8))}><Icon name="target" size={18} /> <span>{rootId && rels.get(rootId) === "Vous" ? "Revenir à moi" : "Recentrer"}</span></button>
+          <button className="icon-btn" onClick={fit} aria-label="Tout afficher" title="Tout afficher">
+            <Icon name="fit" />
+          </button>
+          <button className="btn btn-quiet btn-small" onClick={() => center(rootId, Math.max(v.k, 0.8))}>
+            <Icon name="target" size={18} /> <span>{rootId && rels.get(rootId) === "Vous" ? "Revenir à moi" : "Recentrer"}</span>
+          </button>
         </div>
-        <p className="count">{people.filter((p) => p.kind === "human").length} personnes{people.some((p) => p.kind === "pet") ? `, ${people.filter((p) => p.kind === "pet").length} animaux` : ""}</p>
+        <p className="count">
+          {people.filter((p) => p.kind === "human").length} personnes
+          {people.some((p) => p.kind === "pet") ? `, ${people.filter((p) => p.kind === "pet").length} animaux` : ""}
+        </p>
       </main>
 
       {selected && (
-        <PersonPanel key={selected.id} p={selected} people={people} unions={unions} rel={rels.get(selected.id) ?? ""}
-          photo={selected.photo_path ? urls[selected.photo_path] : undefined} canEdit={canEdit} isRoot={selected.id === rootId}
-          onClose={() => setSel(null)} onGo={go} onCenter={() => center(selected.id, Math.max(v.k, 0.8))}
-          onRoot={async () => { await upTree({ root_id: selected.id }); say(`L'arbre part maintenant de ${selected.first_name}.`); setTimeout(() => center(selected.id, 0.9), 60); }}
-          onSave={async (d) => { snap(); const { error } = await patch(selected.id, d); if (error) say(frError(error.message), "error"); else say("Fiche enregistrée."); await load(); }}
-          onDelete={() => remove(selected)} onPhoto={(f) => onPhoto(selected, f)}
-          onAdd={(rel) => setAdd({ rel, of: selected })} onUnion={(a, b) => setUn(a < b ? { a, b } : { a: b, b: a })} />
+        <PersonPanel
+          key={selected.id}
+          p={selected}
+          people={people}
+          unions={unions}
+          rel={rels.get(selected.id) ?? ""}
+          photo={selected.photo_path ? urls[selected.photo_path] : undefined}
+          canEdit={canEdit}
+          isRoot={selected.id === rootId}
+          onClose={() => setSel(null)}
+          onGo={go}
+          onCenter={() => center(selected.id, Math.max(v.k, 0.8))}
+          onRoot={async () => {
+            await upTree({ root_id: selected.id });
+            say(`L'arbre part maintenant de ${selected.first_name}.`);
+            setTimeout(() => center(selected.id, 0.9), 60);
+          }}
+          onSave={async (d) => {
+            snap();
+            const { error } = await patch(selected.id, d);
+            if (error) say(frError(error.message), "error");
+            else say("Fiche enregistrée.");
+            await load();
+          }}
+          onDelete={() => remove(selected)}
+          onPhoto={(f) => onPhoto(selected, f)}
+          onAdd={(rel) => setAdd({ rel, of: selected })}
+          onUnion={(a, b) => setUn(a < b ? { a, b } : { a: b, b: a })}
+        />
       )}
 
       {menu && (
         <div className="scrim" onMouseDown={() => setMenu(false)}>
           <nav className="sheet" aria-label="Menu" onMouseDown={(e) => e.stopPropagation()}>
-            <header className="dialog-head"><h2>{t.title}</h2><button className="icon-btn" onClick={() => setMenu(false)} aria-label="Fermer le menu"><Icon name="close" /></button></header>
+            <header className="dialog-head">
+              <h2>{t.title}</h2>
+              <button className="icon-btn" onClick={() => setMenu(false)} aria-label="Fermer le menu">
+                <Icon name="close" />
+              </button>
+            </header>
             <div className="sheet-tools">{toolbar}</div>
           </nav>
         </div>
       )}
       {un && byId.get(un.a) && byId.get(un.b) && (
-        <UnionDialog a={byId.get(un.a)!} b={byId.get(un.b)!} existing={unionOf(un.a, un.b)} canEdit={canEdit} onClose={() => setUn(null)} onSave={saveUnion} />
+        <UnionDialog
+          a={byId.get(un.a)!}
+          b={byId.get(un.b)!}
+          existing={unionOf(un.a, un.b)}
+          canEdit={canEdit}
+          onClose={() => setUn(null)}
+          onSave={saveUnion}
+        />
       )}
-      {cal && <CalendarDialog people={people} unions={unions} onClose={() => setCal(false)} onGo={(id) => { setCal(false); go(id); }} />}
+      {cal && (
+        <CalendarDialog
+          people={people}
+          unions={unions}
+          onClose={() => setCal(false)}
+          onGo={(id) => {
+            setCal(false);
+            go(id);
+          }}
+        />
+      )}
       {add && <AddDialog rel={add.rel} of={add.of} onClose={() => setAdd(null)} onSubmit={submitAdd} />}
-      {share && <ShareDialog tree={t} role={role} onClose={() => setShare(false)} onAccess={(v) => upTree({ link_access: v })} onInvite={invite} />}
+      {share && (
+        <ShareDialog tree={t} role={role} onClose={() => setShare(false)} onAccess={(v) => upTree({ link_access: v })} onInvite={invite} />
+      )}
     </div>
   );
 }

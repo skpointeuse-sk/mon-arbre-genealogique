@@ -3,10 +3,24 @@ import { DATE_RE, H, W, gens, layout, lifespan, longDate, relation, toGedcom, ty
 
 let n = 0;
 const person = (first: string, extra: Partial<Person> = {}): Person => ({
-  id: extra.id ?? `p${++n}`, tree_id: "t", kind: "human", species: null,
-  first_name: first, last_name: "Martin", gender: "u",
-  birth: null, birth_time: null, birth_place: null, death: null, job: null, notes: null,
-  photo_path: null, origins: [], parent_ids: [], spouse_ids: [], ...extra,
+  id: extra.id ?? `p${++n}`,
+  tree_id: "t",
+  kind: "human",
+  species: null,
+  first_name: first,
+  last_name: "Martin",
+  gender: "u",
+  birth: null,
+  birth_time: null,
+  birth_place: null,
+  death: null,
+  job: null,
+  notes: null,
+  photo_path: null,
+  origins: [],
+  parent_ids: [],
+  spouse_ids: [],
+  ...extra,
 });
 
 /* Une famille sur quatre générations, avec un couple de chaque côté. */
@@ -75,7 +89,12 @@ describe("layout", () => {
 
 describe("relation", () => {
   const people = family();
-  const of = (id: string) => relation(people, "me", people.find((p) => p.id === id)!);
+  const of = (id: string) =>
+    relation(
+      people,
+      "me",
+      people.find((p) => p.id === id)!,
+    );
 
   it("nomme les liens directs", () => {
     expect(of("me")).toBe("Vous");

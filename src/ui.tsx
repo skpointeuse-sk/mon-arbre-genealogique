@@ -8,16 +8,31 @@ export function Modal({ title, children, onClose, wide }: { title: string; child
     const prev = document.activeElement as HTMLElement | null;
     const first = ref.current?.querySelector<HTMLElement>("[autofocus], input, select, textarea, button:not(.dialog-close)");
     (first ?? ref.current)?.focus();
-    const k = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    const k = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
     window.addEventListener("keydown", k);
-    return () => { window.removeEventListener("keydown", k); prev?.focus?.(); };
+    return () => {
+      window.removeEventListener("keydown", k);
+      prev?.focus?.();
+    };
   }, []);
   return (
     <div className="scrim" onMouseDown={onClose}>
-      <div ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label={title} className={"dialog" + (wide ? " dialog-wide" : "")} onMouseDown={(e) => e.stopPropagation()}>
+      <div
+        ref={ref}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className={"dialog" + (wide ? " dialog-wide" : "")}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         <header className="dialog-head">
           <h2>{title}</h2>
-          <button className="icon-btn dialog-close" onClick={onClose} aria-label="Fermer"><Icon name="close" /></button>
+          <button className="icon-btn dialog-close" onClick={onClose} aria-label="Fermer">
+            <Icon name="close" />
+          </button>
         </header>
         {children}
       </div>
@@ -39,19 +54,30 @@ export function UiProvider({ children }: { children: ReactNode }) {
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), tone === "error" ? 7000 : 3500);
   }, []);
   const ask = useCallback((q: string, yes: string) => new Promise<boolean>((done) => setQuestion({ q, yes, done })), []);
-  const answer = (v: boolean) => { question?.done(v); setQuestion(null); };
+  const answer = (v: boolean) => {
+    question?.done(v);
+    setQuestion(null);
+  };
   return (
     <C.Provider value={{ say, ask }}>
       {children}
       <div className="toasts" role="status" aria-live="polite">
-        {toasts.map((t) => <p key={t.id} className={"toast" + (t.tone === "error" ? " toast-error" : "")}>{t.text}</p>)}
+        {toasts.map((t) => (
+          <p key={t.id} className={"toast" + (t.tone === "error" ? " toast-error" : "")}>
+            {t.text}
+          </p>
+        ))}
       </div>
       {question && (
         <Modal title="Confirmation" onClose={() => answer(false)}>
           <p className="dialog-text">{question.q}</p>
           <div className="dialog-actions">
-            <button className="btn btn-quiet" onClick={() => answer(false)}>Annuler</button>
-            <button className="btn btn-danger" autoFocus onClick={() => answer(true)}>{question.yes}</button>
+            <button className="btn btn-quiet" onClick={() => answer(false)}>
+              Annuler
+            </button>
+            <button className="btn btn-danger" autoFocus onClick={() => answer(true)}>
+              {question.yes}
+            </button>
           </div>
         </Modal>
       )}

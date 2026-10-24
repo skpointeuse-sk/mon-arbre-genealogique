@@ -25,7 +25,9 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean
       <div className="waiting" role="alert">
         <Mark size={36} />
         <p>Un problème inattendu est survenu. Vos données ne sont pas perdues.</p>
-        <button className="btn btn-primary" onClick={() => location.reload()}>Recharger la page</button>
+        <button className="btn btn-primary" onClick={() => location.reload()}>
+          Recharger la page
+        </button>
       </div>
     );
   }

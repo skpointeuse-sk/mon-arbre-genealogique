@@ -1,14 +1,6 @@
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Navigate,
-  Outlet,
-  createRootRoute,
-  createRoute,
-  createRouter,
-  useNavigate,
-  useParams,
-} from "@tanstack/react-router";
+import { Navigate, Outlet, createRootRoute, createRoute, createRouter, useNavigate, useParams } from "@tanstack/react-router";
 import { Landing } from "./Landing";
 import { Wizard } from "./Wizard";
 import { TreeView } from "./TreeView";
@@ -30,7 +22,9 @@ function Message({ text, action = "Retour à l'accueil" }: { text: string; actio
     <div className="waiting">
       <Mark size={36} />
       <p>{text}</p>
-      <a className="btn btn-primary" href="/">{action}</a>
+      <a className="btn btn-primary" href="/">
+        {action}
+      </a>
     </div>
   );
 }
@@ -64,7 +58,8 @@ function TreePage() {
   if (!ready) return <Waiting text="Chargement…" />;
   if (!session) return <Navigate to="/" replace />;
   if (q.isPending) return <Waiting text="Chargement de votre arbre…" />;
-  if (q.isError) return <Message text="Impossible de charger votre arbre. Vérifiez votre connexion, puis rechargez la page." action="Réessayer" />;
+  if (q.isError)
+    return <Message text="Impossible de charger votre arbre. Vérifiez votre connexion, puis rechargez la page." action="Réessayer" />;
   if (!q.data) return <Navigate to="/creer" replace />;
   return <TreeView key={q.data.id} tree={q.data} session={session} />;
 }

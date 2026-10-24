@@ -8,12 +8,7 @@ export const myTreeQuery = (userId: string) =>
     queryKey: ["my-tree", userId],
     queryFn: async (): Promise<Tree | null> => {
       await supabase.rpc("claim_invites");
-      const { data: m, error } = await supabase
-        .from("tree_members")
-        .select("tree_id")
-        .eq("user_id", userId)
-        .order("created_at")
-        .limit(1);
+      const { data: m, error } = await supabase.from("tree_members").select("tree_id").eq("user_id", userId).order("created_at").limit(1);
       if (error) throw error;
       if (!m?.length) return null;
       const { data, error: e2 } = await supabase.from("trees").select("*").eq("id", m[0].tree_id).single();

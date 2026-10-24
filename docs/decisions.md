@@ -5,6 +5,7 @@
 La mission proposait TanStack Start (rendu serveur). Décision : rester sur Vite en application monopage, avec TanStack Router pour les adresses `/`, `/creer`, `/arbre` et `/partage/$treeId`.
 
 Raisons :
+
 - Le site est volontairement caché des moteurs (`noindex`, en-tête `X-Robots-Tag`) : il contient des données de famille. Le rendu serveur pour le référencement n'apporte donc rien.
 - Les aperçus de partage (Open Graph) d'un arbre exposeraient des noms de famille à quiconque voit le lien passer dans une messagerie. L'aperçu reste générique, défini une fois dans `index.html`.
 - TanStack Start ajoute un serveur à faire tourner sur Vercel (fonctions, temps de démarrage, coûts potentiels au-delà du plan Hobby) et une migration risquée pour un gain nul ici.
