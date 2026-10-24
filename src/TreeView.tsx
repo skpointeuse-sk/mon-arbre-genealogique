@@ -312,17 +312,15 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
   };
   const saveUnion = async (d: { type: string; date: string; place: string; notes: string }) => {
     if (!un) return false;
-    const { error } = await supabase
-      .from("unions")
-      .upsert({
-        tree_id: t.id,
-        person_a: un.a,
-        person_b: un.b,
-        type: d.type,
-        date: d.date.trim() || null,
-        place: d.place.trim() || null,
-        notes: d.notes.trim() || null,
-      });
+    const { error } = await supabase.from("unions").upsert({
+      tree_id: t.id,
+      person_a: un.a,
+      person_b: un.b,
+      type: d.type,
+      date: d.date.trim() || null,
+      place: d.place.trim() || null,
+      notes: d.notes.trim() || null,
+    });
     if (error) {
       say(frError(error.message), "error");
       return false;
