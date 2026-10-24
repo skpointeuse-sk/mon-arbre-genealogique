@@ -808,6 +808,7 @@ fieldset:disabled {
 }
 .topbar-id {
   display: flex;
+  flex: none;
   align-items: center;
   gap: 10px;
   min-width: 0;
@@ -828,6 +829,7 @@ fieldset:disabled {
 }
 .topbar-search {
   flex: 1;
+  min-width: 140px;
   max-width: 360px;
   margin-left: auto;
 }
@@ -962,7 +964,7 @@ fieldset:disabled {
   color: var(--ink-2);
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1360px) {
   .topbar-tools .tool span {
     position: absolute;
     width: 1px;
@@ -1693,4 +1695,75 @@ fieldset:disabled {
   [data-fx="feuilles"] .scene-fx {
     display: none;
   }
+}
+
+/* Membres et historique (members.tsx, history.tsx) */
+.members {
+  padding-top: 16px;
+  border-top: 1px solid var(--rule-soft);
+}
+.members h3 {
+  font-size: 18px;
+}
+.member-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.member-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.member-who {
+  display: grid;
+  flex: 1;
+  min-width: 160px;
+}
+.member-who .kin-meta {
+  overflow-wrap: anywhere;
+}
+.member-list select {
+  min-height: 40px;
+  padding: 6px 8px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 14px;
+}
+.member-role {
+  color: var(--ink-2);
+  font-size: 14px;
+}
+.link-danger {
+  color: var(--danger);
+}
+.history li {
+  grid-template-columns: 1fr;
+  gap: 2px;
+}
+.history .kin-meta {
+  display: block;
+}
+.presence {
+  display: flex;
+  align-items: center;
+  margin-right: 6px;
+}
+.presence span {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-left: -6px;
+  border: 2px solid var(--paper);
+  border-radius: 50%;
+  background: var(--oak);
+  color: var(--paper);
+  font-size: 12px;
+  font-weight: 700;
 }

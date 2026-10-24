@@ -31,6 +31,8 @@ import { Icon, Mark } from "./icons";
 import { frError, useUi } from "./ui";
 import { useTreeData } from "./useTreeData";
 import { KMIN, useView } from "./useView";
+import { usePresence } from "./usePresence";
+import { HistoryDialog } from "./history";
 
 const PANEL_W = 400;
 const isWide = () => window.innerWidth >= 900;
@@ -46,6 +48,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
   const { people: all, unions, urls, loaded, loadError, load } = useTreeData(tree.id);
   const [scope, setScope] = useState<ExportOpts | null>(null);
   const [exportOpen, setExportOpen] = useState(false);
+  const [history, setHistory] = useState(false);
   const [role, setRole] = useState<string | null>(null);
   const [sel, setSel] = useState<string | null>(null);
   const [add, setAdd] = useState<{ rel: AddRel; of: Person } | null>(null);
@@ -75,6 +78,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
 
   const canEdit = (!!role && role !== "viewer") || (!!session && t.link_access === "edit");
   const canAdmin = role === "owner" || role === "co_lead";
+  const others = usePresence(tree.id, role ? session : null);
   const rootId = t.root_id && all.some((p) => p.id === t.root_id) ? t.root_id : (all[0]?.id ?? null);
   // Pendant un export, seules les personnes choisies sont dessinées.
   const people = useMemo(() => (scope ? scopePeople(all, rootId, scope.depth, scope.view) : all), [all, rootId, scope]);
@@ -543,6 +547,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
         </div>
       )}
       <button
+        title="Anniversaires"
         className="tool"
         onClick={() => {
           setMenu(false);
@@ -564,7 +569,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
             if (e.key === "Escape") setFiles(false);
           }}
         >
-          <button className="tool" aria-expanded={files} aria-controls="file-tools" onClick={() => setFiles((f) => !f)}>
+          <button title="Fichier" className="tool" aria-expanded={files} aria-controls="file-tools" onClick={() => setFiles((f) => !f)}>
             <Icon name="download" />
             <span>Fichier</span>
           </button>
@@ -576,6 +581,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
         </div>
       )}
       <button
+        title="Vérifier"
         className="tool"
         onClick={() => {
           setMenu(false);
@@ -585,6 +591,19 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
         <Icon name="check" />
         <span>Vérifier</span>
       </button>
+      {role && (
+        <button
+          title="Historique"
+          className="tool"
+          onClick={() => {
+            setMenu(false);
+            setHistory(true);
+          }}
+        >
+          <Icon name="history" />
+          <span>Historique</span>
+        </button>
+      )}
       {canAdmin && (
         <label className="tool tool-select">
           <Icon name="layers" />
@@ -600,6 +619,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
       )}
       {canAdmin && (
         <button
+          title="Partager"
           className="tool"
           onClick={() => {
             setMenu(false);
@@ -611,12 +631,12 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
         </button>
       )}
       {session ? (
-        <button className="tool" onClick={() => supabase.auth.signOut()}>
+        <button title="Se déconnecter" className="tool" onClick={() => supabase.auth.signOut()}>
           <Icon name="logout" />
           <span>Se déconnecter</span>
         </button>
       ) : (
-        <a className="tool" href="/">
+        <a title="Se connecter" className="tool" href="/">
           <Icon name="logout" />
           <span>Se connecter</span>
         </a>
@@ -693,6 +713,15 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
           </div>
         </div>
         <div className="topbar-search">{search}</div>
+        {others.length > 0 && (
+          <div className="presence" role="status" aria-label={`En ce moment sur l'arbre : ${others.map((o) => o.name).join(", ")}`}>
+            {others.slice(0, 4).map((o) => (
+              <span key={o.id} title={o.name} aria-hidden="true">
+                {o.name.slice(0, 2).toUpperCase()}
+              </span>
+            ))}
+          </div>
+        )}
         <nav className="topbar-tools" aria-label="Outils">
           {tools(false)}
         </nav>
@@ -910,6 +939,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
           if (f) importGed(f);
         }}
       />
+      {history && session && <HistoryDialog treeId={t.id} me={session.user.id} onClose={() => setHistory(false)} />}
       {exportOpen && (
         <ExportDialog
           rootName={(rootId && all.find((p) => p.id === rootId)?.first_name) || "la racine"}
@@ -941,7 +971,14 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
       )}
       {add && <AddDialog rel={add.rel} of={add.of} onClose={() => setAdd(null)} onSubmit={submitAdd} />}
       {share && (
-        <ShareDialog tree={t} role={role} onClose={() => setShare(false)} onAccess={(v) => upTree({ link_access: v })} onInvite={invite} />
+        <ShareDialog
+          tree={t}
+          role={role}
+          onClose={() => setShare(false)}
+          onAccess={(v) => upTree({ link_access: v })}
+          onInvite={invite}
+          me={session!.user.id}
+        />
       )}
     </div>
   );
