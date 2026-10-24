@@ -5,7 +5,6 @@ import {
   type NewPerson,
   type Person,
   type Tree,
-  type Union,
   H,
   ROW,
   W,
@@ -32,15 +31,11 @@ import { frError, useUi } from "./ui";
 import { useTreeData } from "./useTreeData";
 import { KMIN, useView } from "./useView";
 import { initials, usePresence } from "./usePresence";
+import { type Plan, type Snapshot, type Step, plan } from "./undo";
 import { HistoryDialog } from "./history";
 
 const PANEL_W = 400;
 const isWide = () => window.innerWidth >= 900;
-
-/* Un état de l'arbre pour Annuler / Rétablir : les fiches et les unions ensemble,
-   car supprimer une personne efface aussi ses unions. */
-type Snapshot = { people: Person[]; unions: Union[] };
-const pairKey = (u: Pick<Union, "person_a" | "person_b">) => u.person_a + "|" + u.person_b;
 
 export function TreeView({ tree, session }: { tree: Tree; session: Session | null }) {
   const { say, ask } = useUi();
@@ -62,7 +57,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
   const box = useRef<HTMLElement>(null);
   const inner = useRef<HTMLDivElement>(null);
   const centered = useRef(false);
-  const hist = useRef<{ u: Snapshot[]; r: Snapshot[] }>({ u: [], r: [] });
+  const hist = useRef<{ u: Step[]; r: Step[] }>({ u: [], r: [] });
   const { v, setV, vRef, anim, animate, zoomAt, pan, gesture, handlers } = useView(box);
 
   useEffect(() => {
@@ -163,36 +158,45 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
 
   /* ---------- Écritures ---------- */
   const patch = (id: string, d: Record<string, unknown>) => supabase.from("people").update(d).eq("id", id);
-  const now = (): Snapshot => ({ people, unions });
+  const now = (): Snapshot => ({ people: all, unions });
+  // Avant chaque action : on garde l'état. Après : reload() note l'état obtenu (voir undo.ts).
   const snap = () => {
-    hist.current = { u: [...hist.current.u.slice(-29), now()], r: [] };
+    const u = hist.current.u.filter((s) => s.after !== null);
+    hist.current = { u: [...u.slice(-29), { before: now(), after: null }], r: [] };
   };
-  const restore = async (s: Snapshot) => {
-    const keep = new Set(s.people.map((p) => p.id)),
-      gone = people.filter((p) => !keep.has(p.id)).map((p) => p.id);
-    if (gone.length) await supabase.from("people").delete().in("id", gone);
-    if (s.people.length) await supabase.from("people").upsert(s.people);
-    // Unions : on retire celles ajoutées depuis, puis on remet celles de l'état restauré.
-    const want = new Set(s.unions.map(pairKey));
-    for (const u of unions)
-      if (!want.has(pairKey(u)))
-        await supabase.from("unions").delete().eq("tree_id", t.id).eq("person_a", u.person_a).eq("person_b", u.person_b);
-    if (s.unions.length) await supabase.from("unions").upsert(s.unions);
-    load();
+  const reload = async () => {
+    const s = await load();
+    const last = hist.current.u.at(-1);
+    if (s && last && last.after === null) last.after = s;
+    return s;
   };
+  const apply = async (p: Plan) => {
+    for (const u of p.deleteUnions)
+      await supabase.from("unions").delete().eq("tree_id", t.id).eq("person_a", u.person_a).eq("person_b", u.person_b);
+    if (p.upsertPeople.length) await supabase.from("people").upsert(p.upsertPeople);
+    if (p.deletePeople.length) await supabase.from("people").delete().in("id", p.deletePeople);
+    if (p.upsertUnions.length) await supabase.from("unions").upsert(p.upsertUnions);
+    await load();
+  };
+  const conflictNote = (c: string[]) =>
+    c.length ? ` Modifié entre-temps par quelqu'un d'autre, donc laissé tel quel : ${c.join(", ")}.` : "";
   const undo = async () => {
-    const prev = hist.current.u.pop();
-    if (!prev) return say("Rien à annuler.");
-    hist.current.r.push(now());
-    await restore(prev);
-    say("Modification annulée.");
+    const step = hist.current.u.pop();
+    if (!step) return say("Rien à annuler.");
+    const cur = (await load()) ?? now();
+    const p = plan(step.after ?? cur, step.before, cur);
+    await apply(p);
+    hist.current.r.push({ before: step.before, after: step.after ?? cur });
+    say("Modification annulée." + conflictNote(p.conflicts));
   };
   const redo = async () => {
-    const nxt = hist.current.r.pop();
-    if (!nxt) return say("Rien à rétablir.");
-    hist.current.u.push(now());
-    await restore(nxt);
-    say("Modification rétablie.");
+    const step = hist.current.r.pop();
+    if (!step) return say("Rien à rétablir.");
+    const cur = (await load()) ?? now();
+    const p = plan(step.before, step.after!, cur);
+    await apply(p);
+    hist.current.u.push(step);
+    say("Modification rétablie." + conflictNote(p.conflicts));
   };
   const onShortcut = useEffectEvent((e: KeyboardEvent) => {
     const tag = (e.target as HTMLElement).tagName;
@@ -219,7 +223,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
       if (error) return say(frError(error.message), "error");
       snap();
       await patch(p.id, { photo_path: path });
-      load();
+      reload();
       say("Photo enregistrée.");
     } catch {
       say("Cette image ne peut pas être lue. Utilisez une photo JPEG, PNG ou WebP de moins de 20 Mo.", "error");
@@ -242,7 +246,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
       return false;
     }
     say("Union enregistrée.");
-    load();
+    reload();
     return true;
   };
   const submitAdd = async (name: string, species: string) => {
@@ -295,7 +299,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
       if (!(await ins())) return;
     }
     setAdd(null);
-    await load();
+    await reload();
     say(`${row.first_name} a été ajouté${row.gender === "f" ? "e" : ""} à l'arbre.`);
   };
   const remove = async (p: Person) => {
@@ -315,7 +319,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
     if (error) say(frError(error.message), "error");
     else say(`${fullName(p)} a été retiré de l'arbre.`);
     setSel(null);
-    load();
+    reload();
   };
   const upTree = async (d: Record<string, unknown>) => {
     const { error } = await supabase.from("trees").update(d).eq("id", t.id);
@@ -429,7 +433,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
         break;
       }
     }
-    await load();
+    await reload();
     say(
       `${rows.length} personne${rows.length > 1 ? "s ajoutées" : " ajoutée"}.${skipped ? ` ${skipped} fiche${skipped > 1 ? "s" : ""} sans nom ignorée${skipped > 1 ? "s" : ""}.` : ""}`,
     );
@@ -900,7 +904,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
             const { error } = await patch(selected.id, d);
             if (error) say(frError(error.message), "error");
             else say("Fiche enregistrée.");
-            await load();
+            await reload();
           }}
           onDelete={() => remove(selected)}
           onPhoto={(f) => onPhoto(selected, f)}

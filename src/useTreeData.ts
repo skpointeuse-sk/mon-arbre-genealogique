@@ -16,7 +16,7 @@ export function useTreeData(treeId: string) {
     if (error) {
       setLoadError(frError(error.message));
       setLoaded(true);
-      return;
+      return null;
     }
     const ps = ((data as Person[]) || []).map(clean);
     setPeople(ps);
@@ -32,6 +32,7 @@ export function useTreeData(treeId: string) {
     }
     const { data: u } = await supabase.from("unions").select("*").eq("tree_id", treeId);
     setUnions((u as Union[]) || []);
+    return { people: ps, unions: (u as Union[]) || [] };
   }, [treeId]);
 
   useEffect(() => {

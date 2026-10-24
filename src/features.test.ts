@@ -6,6 +6,7 @@ import { fileName, scopePeople } from "./exporting";
 import { rolesFor } from "./members";
 import { describe as tell } from "./history";
 import { initials } from "./usePresence";
+import { pairKey, plan } from "./undo";
 
 const person = (id: string, first: string, extra: Partial<Person> = {}): Person => ({
   id,
@@ -199,5 +200,50 @@ describe("initiales de présence", () => {
     expect(initials("jean-marc")).toBe("JM");
     expect(initials("Jeanne")).toBe("JE");
     expect(initials("")).toBe("?");
+  });
+});
+
+describe("annuler à plusieurs", () => {
+  const P = (id: string, extra: Partial<Person> = {}) => person(id, id, extra);
+  const U = (a: string, b: string, type = "mariage"): Union => ({
+    tree_id: "t",
+    person_a: a,
+    person_b: b,
+    type,
+    date: null,
+    place: null,
+    notes: null,
+  });
+
+  it("n'annule que la fiche modifiée par l'action", () => {
+    const before = { people: [P("a"), P("b")], unions: [] };
+    const after = { people: [P("a", { job: "Boulanger" }), P("b")], unions: [] };
+    // Pendant ce temps, quelqu'un d'autre a ajouté c et modifié b.
+    const cur = { people: [P("a", { job: "Boulanger" }), P("b", { job: "Maçon" }), P("c")], unions: [] };
+    const p = plan(after, before, cur);
+    expect(p.upsertPeople.map((x) => [x.id, x.job])).toEqual([["a", null]]);
+    expect(p.deletePeople).toEqual([]);
+    expect(p.conflicts).toEqual([]);
+  });
+  it("n'écrase pas une fiche changée entre-temps par un autre", () => {
+    const before = { people: [P("a")], unions: [] };
+    const after = { people: [P("a", { job: "Boulanger" })], unions: [] };
+    const cur = { people: [P("a", { job: "Pâtissier" })], unions: [] };
+    const p = plan(after, before, cur);
+    expect(p.upsertPeople).toEqual([]);
+    expect(p.conflicts).toEqual(["a Martin"]);
+  });
+  it("remet une personne supprimée avec ses unions, retire un ajout", () => {
+    const before = { people: [P("a"), P("b")], unions: [U("a", "b")] };
+    const after = { people: [P("a"), P("n")], unions: [] };
+    const p = plan(after, before, after);
+    expect(p.upsertPeople.map((x) => x.id)).toEqual(["b"]);
+    expect(p.deletePeople).toEqual(["n"]);
+    expect(p.upsertUnions.map(pairKey)).toEqual(["a|b"]);
+  });
+  it("rétablir rejoue l'action", () => {
+    const before = { people: [P("a")], unions: [] };
+    const after = { people: [P("a", { job: "Boulanger" })], unions: [] };
+    expect(plan(before, after, before).upsertPeople[0].job).toBe("Boulanger");
   });
 });
