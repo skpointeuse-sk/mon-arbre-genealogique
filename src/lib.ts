@@ -12,6 +12,7 @@ export type Person = {
   birth_time: string | null;
   birth_place: string | null;
   death: string | null;
+  death_place?: string | null;
   job: string | null;
   notes: string | null;
   photo_path: string | null;

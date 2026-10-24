@@ -24,7 +24,8 @@ import { AMBIANCES, ambianceOf } from "./themes";
 import { Scene } from "./scenes";
 import { PersonCard } from "./card";
 import { PersonPanel, type AddRel } from "./Panel";
-import { AddDialog, CalendarDialog, ShareDialog, UnionDialog } from "./dialogs";
+import { AddDialog, CalendarDialog, CheckDialog, ShareDialog, UnionDialog } from "./dialogs";
+import { parseGedcom } from "./gedcom";
 import { Icon, Mark } from "./icons";
 import { frError, useUi } from "./ui";
 import { useTreeData } from "./useTreeData";
@@ -48,7 +49,10 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
   const [share, setShare] = useState(false);
   const [cal, setCal] = useState(false);
   const [menu, setMenu] = useState(false);
+  const [files, setFiles] = useState(false);
   const [un, setUn] = useState<{ a: string; b: string } | null>(null);
+  const [check, setCheck] = useState(false);
+  const gedInput = useRef<HTMLInputElement>(null);
   const box = useRef<HTMLElement>(null);
   const inner = useRef<HTMLDivElement>(null);
   const centered = useRef(false);
@@ -346,6 +350,30 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
     setMenu(false);
     download(URL.createObjectURL(new Blob([toGedcom(people)], { type: "text/plain" })), "mon-arbre.ged");
   };
+  // Import : les personnes du fichier s'ajoutent à l'arbre, rien n'est remplacé ni supprimé.
+  const importGed = async (file: File) => {
+    if (file.size > 5 * 1024 * 1024) return say("Ce fichier dépasse 5 Mo. Exportez une partie de l'arbre depuis votre logiciel.", "error");
+    const { people: rows, skipped } = parseGedcom(await file.text(), t.id);
+    if (!rows.length)
+      return say("Aucune personne trouvée dans ce fichier. Vérifiez qu'il s'agit bien d'un fichier GEDCOM (.ged).", "error");
+    const ok = await ask(
+      `Ajouter ${rows.length} personne${rows.length > 1 ? "s" : ""} de « ${file.name} » à l'arbre ? Les fiches existantes ne sont pas modifiées.`,
+      "Importer",
+    );
+    if (!ok) return;
+    snap();
+    for (let i = 0; i < rows.length; i += 200) {
+      const { error } = await supabase.from("people").insert(rows.slice(i, i + 200));
+      if (error) {
+        say(frError(error.message), "error");
+        break;
+      }
+    }
+    await load();
+    say(
+      `${rows.length} personne${rows.length > 1 ? "s ajoutées" : " ajoutée"}.${skipped ? ` ${skipped} fiche${skipped > 1 ? "s" : ""} sans nom ignorée${skipped > 1 ? "s" : ""}.` : ""}`,
+    );
+  };
 
   /* ---------- Recherche ---------- */
   const [q, setQ] = useState("");
@@ -412,17 +440,43 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
   const unionOf = (a: string, b: string) =>
     unions.find((u) => (u.person_a === a && u.person_b === b) || (u.person_a === b && u.person_b === a));
 
-  const toolbar = (
+  const fileTools = (
+    <>
+      <button className="tool" onClick={exportPng}>
+        <Icon name="download" />
+        <span>Image PNG</span>
+      </button>
+      <button className="tool" onClick={exportGed}>
+        <Icon name="download" />
+        <span>Fichier GEDCOM</span>
+      </button>
+      {canEdit && (
+        <button
+          className="tool"
+          onClick={() => {
+            setMenu(false);
+            gedInput.current?.click();
+          }}
+        >
+          <Icon name="upload" />
+          <span>Importer un GEDCOM</span>
+        </button>
+      )}
+    </>
+  );
+
+  // Dans la barre du haut, les fichiers passent dans un menu et Annuler/Rétablir en icônes : tout tient en 1280 px.
+  const tools = (sheet: boolean) => (
     <>
       {canEdit && (
         <div className="tool-group">
           <button className="tool" onClick={undo} title="Annuler (Ctrl+Z)">
             <Icon name="undo" />
-            <span>Annuler</span>
+            <span className={sheet ? undefined : "sr"}>Annuler</span>
           </button>
           <button className="tool" onClick={redo} title="Rétablir (Ctrl+Y)">
             <Icon name="redo" />
-            <span>Rétablir</span>
+            <span className={sheet ? undefined : "sr"}>Rétablir</span>
           </button>
         </div>
       )}
@@ -436,13 +490,38 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
         <Icon name="calendar" />
         <span>Anniversaires</span>
       </button>
-      <button className="tool" onClick={exportPng}>
-        <Icon name="download" />
-        <span>Image PNG</span>
-      </button>
-      <button className="tool" onClick={exportGed}>
-        <Icon name="download" />
-        <span>Fichier GEDCOM</span>
+      {sheet ? (
+        fileTools
+      ) : (
+        <div
+          className="tool-menu"
+          onBlur={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget)) setFiles(false);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setFiles(false);
+          }}
+        >
+          <button className="tool" aria-expanded={files} aria-controls="file-tools" onClick={() => setFiles((f) => !f)}>
+            <Icon name="download" />
+            <span>Fichier</span>
+          </button>
+          {files && (
+            <div id="file-tools" className="tool-pop" onClick={() => setFiles(false)}>
+              {fileTools}
+            </div>
+          )}
+        </div>
+      )}
+      <button
+        className="tool"
+        onClick={() => {
+          setMenu(false);
+          setCheck(true);
+        }}
+      >
+        <Icon name="check" />
+        <span>Vérifier</span>
       </button>
       {canAdmin && (
         <label className="tool tool-select">
@@ -553,7 +632,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
         </div>
         <div className="topbar-search">{search}</div>
         <nav className="topbar-tools" aria-label="Outils">
-          {toolbar}
+          {tools(false)}
         </nav>
         <div className="topbar-mobile">
           <button className="icon-btn" aria-label="Rechercher" onClick={() => setSearchMobile(true)}>
@@ -744,7 +823,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
                 <Icon name="close" />
               </button>
             </header>
-            <div className="sheet-tools">{toolbar}</div>
+            <div className="sheet-tools">{tools(true)}</div>
           </nav>
         </div>
       )}
@@ -756,6 +835,28 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
           canEdit={canEdit}
           onClose={() => setUn(null)}
           onSave={saveUnion}
+        />
+      )}
+      <input
+        ref={gedInput}
+        type="file"
+        accept=".ged,.GED,text/plain"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = "";
+          if (f) importGed(f);
+        }}
+      />
+      {check && (
+        <CheckDialog
+          people={people}
+          unions={unions}
+          onClose={() => setCheck(false)}
+          onGo={(id) => {
+            setCheck(false);
+            go(id);
+          }}
         />
       )}
       {cal && (

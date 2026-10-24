@@ -47,3 +47,19 @@ export async function mockTree(page: Page, preset: string) {
     return route.fulfill({ json: body });
   });
 }
+
+/* Session factice de propriétaire : la barre d'outils complète s'affiche, sans compte réel. */
+export async function mockOwner(page: Page) {
+  const user = { id: "u1", aud: "authenticated", role: "authenticated", email: "test@example.com" };
+  const session = {
+    access_token: "test",
+    token_type: "bearer",
+    expires_in: 3600,
+    expires_at: Math.floor(Date.now() / 1000) + 3600,
+    refresh_token: "test",
+    user,
+  };
+  await page.addInitScript((s) => localStorage.setItem("sb-nyboahgdnqivjliqcrtd-auth-token", s), JSON.stringify(session));
+  await page.route("**/auth/v1/**", (route) => route.fulfill({ json: user }));
+  await page.route("**/rest/v1/tree_members**", (route) => route.fulfill({ json: { role: "owner" } }));
+}

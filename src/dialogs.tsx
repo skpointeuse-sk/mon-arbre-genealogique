@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { type Person, type Tree, type Union, DATE_RE, SPECIES, UNIONS, upcoming, fullName } from "./lib";
 import { Modal } from "./ui";
+import { checkFamily } from "./check";
 import { ADD_LABEL, type AddRel } from "./Panel";
 
 export function AddDialog({
@@ -257,6 +258,42 @@ export function ShareDialog({
           <small className="muted">La personne verra l'arbre en se connectant avec cet email.</small>
         </form>
       </div>
+    </Modal>
+  );
+}
+
+export function CheckDialog({
+  people,
+  unions,
+  onClose,
+  onGo,
+}: {
+  people: Person[];
+  unions: Union[];
+  onClose: () => void;
+  onGo: (id: string) => void;
+}) {
+  const list = checkFamily(people, unions);
+  return (
+    <Modal title="Vérifier les dates" onClose={onClose}>
+      {list.length ? (
+        <>
+          <p className="muted">
+            Quelques dates méritent un second regard. Ce ne sont pas forcément des erreurs : cliquez sur un nom pour ouvrir la fiche.
+          </p>
+          <ul className="events">
+            {list.map((a, i) => (
+              <li key={i}>
+                <button className="link" onClick={() => onGo(a.id)}>
+                  {a.text}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : (
+        <p className="muted">Rien à signaler : les dates de l'arbre sont cohérentes entre elles.</p>
+      )}
     </Modal>
   );
 }
