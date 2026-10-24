@@ -7,6 +7,8 @@ export type Person = {
   death: string | null; job: string | null; notes: string | null;
   photo_path: string | null; origins: string[]; parent_ids: string[]; spouse_ids: string[];
 };
+/* Ligne à insérer dans la table people : seuls les champs connus à la création sont remplis. */
+export type NewPerson = Partial<Person> & Pick<Person, "id" | "tree_id" | "kind" | "gender" | "origins" | "parent_ids" | "spouse_ids">;
 export type Tree = { id: string; title: string; root_id: string | null; link_access: string; settings: { preset?: string } | null };
 export type Union = { tree_id: string; person_a: string; person_b: string; type: string; date: string | null; place: string | null; notes: string | null };
 
@@ -183,8 +185,13 @@ export function layout(people: Person[], rootId: string | null): Layout {
     const known = others.filter((x) => parentCenter(x) !== undefined).sort((a, b) => parentCenter(a)! - parentCenter(b)!);
     const unknown = others.filter((x) => parentCenter(x) === undefined);
     const left: string[] = [], right: string[] = [];
-    for (const x of known) (ref !== undefined ? parentCenter(x)! < ref : left.length <= right.length) ? left.push(x) : right.push(x);
-    for (const x of unknown) (left.length <= right.length ? left.unshift(x) : right.push(x));
+    for (const x of known) {
+      const goLeft = ref !== undefined ? parentCenter(x)! < ref : left.length <= right.length;
+      if (goLeft) left.push(x); else right.push(x);
+    }
+    for (const x of unknown) {
+      if (left.length <= right.length) left.unshift(x); else right.push(x);
+    }
     // Rééquilibrage pour garder chaque conjoint au contact de la personne
     while (left.length > right.length + 1) right.unshift(left.pop()!);
     while (right.length > left.length + 1) left.push(right.shift()!);

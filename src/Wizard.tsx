@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
-import { split, uid } from "./lib";
+import { type NewPerson, type Person, split, uid } from "./lib";
 import { frError, useUi } from "./ui";
 import { Icon, Mark } from "./icons";
 
@@ -49,26 +49,27 @@ export function Wizard({ session, onDone }: { session: Session; onDone: () => vo
     const me = split(v.me);
     const { data: t, error } = await supabase.from("trees").insert({ title: `Famille ${me.last_name || me.first_name}`, owner_id: session.user.id }).select().single();
     if (error) { setBusy(false); return say(frError(error.message), "error"); }
-    const rows: any[] = [];
-    const mk = (name: string | undefined, gender: string, def = "") => {
+    const rows: NewPerson[] = [];
+    const mk = (name: string | undefined, gender: Person["gender"], def = ""): NewPerson | null => {
       if (!name?.trim()) return null;
-      const r: any = { id: uid(), tree_id: t.id, kind: "human", gender, origins: [], parent_ids: [], spouse_ids: [], ...split(name, def) };
+      const r: NewPerson = { id: uid(), tree_id: t.id, kind: "human", gender, origins: [], parent_ids: [], spouse_ids: [], ...split(name, def) };
       rows.push(r);
       return r;
     };
-    const up = (parent: any, a?: string, b?: string, label = "", g = "u") => {
+    const up = (parent: NewPerson | null, a?: string, b?: string, label = "", g: Person["gender"] = "u") => {
       const ga = mk(a, "m", parent?.last_name ?? ""), gb = mk(b, "f");
       if (!ga && !gb) return parent;
-      const p = parent ?? mk(label, g);
-      p.parent_ids = [ga, gb].filter(Boolean).map((x: any) => x.id);
+      const p = (parent ?? mk(label, g))!;
+      p.parent_ids = [ga, gb].filter((x): x is NewPerson => !!x).map((x) => x.id);
       if (ga && gb) { ga.spouse_ids = [gb.id]; gb.spouse_ids = [ga.id]; }
       return p;
     };
-    const meR = mk(v.me, v.gender);
+    // v.me est vérifié en tête de fonction : la personne racine existe toujours.
+    const meR = mk(v.me, v.gender as Person["gender"])!;
     let fa = mk(v.father, "m", me.last_name), mo = mk(v.mother, "f");
     fa = up(fa, v.pf, v.pm, "Père", "m");
     mo = up(mo, v.mf, v.mm, "Mère", "f");
-    const par = [fa, mo].filter(Boolean).map((x: any) => x.id);
+    const par = [fa, mo].filter((x): x is NewPerson => !!x).map((x) => x.id);
     if (fa && mo) { fa.spouse_ids = [mo.id]; mo.spouse_ids = [fa.id]; }
     meR.parent_ids = par;
     sibs.forEach((s) => { const r = mk(s, "u", me.last_name); if (r) r.parent_ids = par; });

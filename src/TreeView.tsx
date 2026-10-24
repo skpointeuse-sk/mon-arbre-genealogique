@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as RKE } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
-import { type Person, type Tree, type Union, H, ROW, W, clean, compress, download, fullName, layout, lifespan, norm, relation, split, toGedcom, uid } from "./lib";
+import { type NewPerson, type Person, type Tree, type Union, H, ROW, W, clean, compress, download, fullName, layout, lifespan, norm, relation, split, toGedcom, uid } from "./lib";
 import { AMBIANCES, ambianceOf, reliefPaths } from "./themes";
 import { PersonCard } from "./card";
 import { PersonPanel, type AddRel } from "./Panel";
@@ -243,7 +243,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
     const { rel, of } = add;
     if (rel === "sibling" && !of.parent_ids.length) { say("Ajoutez d'abord un père ou une mère à cette personne.", "error"); return; }
     snap();
-    const row: any = { id: uid(), tree_id: t.id, kind: "human", gender: "u", origins: [], parent_ids: [], spouse_ids: [], ...split(name, rel === "child" || rel === "sibling" || rel === "father" ? of.last_name : "") };
+    const row: NewPerson = { id: uid(), tree_id: t.id, kind: "human", gender: "u", origins: [], parent_ids: [], spouse_ids: [], ...split(name, rel === "child" || rel === "sibling" || rel === "father" ? of.last_name : "") };
     const ins = async () => { const { error } = await supabase.from("people").insert(row); if (error) { say(frError(error.message), "error"); return false; } return true; };
     if (rel === "father" || rel === "mother") {
       row.gender = rel === "father" ? "m" : "f";
