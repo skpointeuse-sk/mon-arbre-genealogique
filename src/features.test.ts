@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { type Person, type Union, toGedcom } from "./lib";
 import { frDate, parseGedcom } from "./gedcom";
 import { checkFamily } from "./check";
+import { fileName, scopePeople } from "./exporting";
 
 const person = (id: string, first: string, extra: Partial<Person> = {}): Person => ({
   id,
@@ -126,5 +127,43 @@ describe("vérificateur de cohérence", () => {
 describe("import GEDCOM, fichiers Windows", () => {
   it("ignore la marque d'ordre des octets en début de fichier", () => {
     expect(parseGedcom("﻿0 @I1@ INDI\n1 NAME Rose /Petit/", "t").people).toHaveLength(1);
+  });
+});
+
+describe("choix de l'export", () => {
+  // Arrière-grand-père > grand-père > père (+ mère) > moi > fils > petite-fille ; une tante à côté.
+  const fam = [
+    person("ag", "Arsène"),
+    person("gp", "Henri", { parent_ids: ["ag"] }),
+    person("pe", "Paul", { parent_ids: ["gp"], spouse_ids: ["me"] }),
+    person("me", "Sophie", { spouse_ids: ["pe"] }),
+    person("ta", "Claire", { parent_ids: ["gp"] }),
+    person("mo", "Lucas", { parent_ids: ["pe", "me"], spouse_ids: ["co"] }),
+    person("co", "Inès", { spouse_ids: ["mo"] }),
+    person("fi", "Hugo", { parent_ids: ["mo", "co"] }),
+    person("pf", "Léa", { parent_ids: ["fi"] }),
+  ];
+  const ids = (l: Person[]) => l.map((p) => p.id).sort();
+
+  it("garde tout l'arbre par défaut", () => {
+    expect(scopePeople(fam, "mo", 0, "all")).toBe(fam);
+  });
+  it("ascendance sur 3 générations : moi, parents, grands-parents", () => {
+    expect(ids(scopePeople(fam, "mo", 3, "up"))).toEqual(["gp", "me", "mo", "pe"]);
+  });
+  it("descendance complète avec les conjoints", () => {
+    expect(ids(scopePeople(fam, "mo", 0, "down"))).toEqual(["co", "fi", "mo", "pf"]);
+  });
+  it("vue globale sur 3 générations : des grands-parents aux petits-enfants", () => {
+    expect(ids(scopePeople(fam, "mo", 3, "all"))).toEqual(["co", "fi", "gp", "me", "mo", "pe", "pf", "ta"]);
+  });
+  it("retire les liens vers les personnes hors cadre", () => {
+    const pe = scopePeople(fam, "mo", 3, "up").find((p) => p.id === "pe")!;
+    expect(pe.spouse_ids).toEqual(["me"]);
+    expect(scopePeople(fam, "mo", 3, "up").find((p) => p.id === "gp")!.parent_ids).toEqual([]);
+  });
+  it("donne un nom de fichier lisible", () => {
+    expect(fileName("Famille Lefèvre & co", "a2")).toBe("famille-lefevre-co-a2.pdf");
+    expect(fileName("", "png")).toBe("mon-arbre.png");
   });
 });

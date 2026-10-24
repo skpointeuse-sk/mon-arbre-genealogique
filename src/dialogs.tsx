@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { type Person, type Tree, type Union, DATE_RE, SPECIES, UNIONS, upcoming, fullName } from "./lib";
 import { Modal } from "./ui";
 import { checkFamily } from "./check";
+import { type Depth, type ExportOpts, type Format, type View, FORMAT_LABEL } from "./exporting";
 import { ADD_LABEL, type AddRel } from "./Panel";
 
 export function AddDialog({
@@ -294,6 +295,79 @@ export function CheckDialog({
       ) : (
         <p className="muted">Rien à signaler : les dates de l'arbre sont cohérentes entre elles.</p>
       )}
+    </Modal>
+  );
+}
+
+const DEPTHS: [Depth, string][] = [
+  [3, "Jusqu'aux grands-parents et petits-enfants"],
+  [4, "Jusqu'aux arrière-grands-parents et arrière-petits-enfants"],
+  [0, "Tout l'arbre"],
+];
+const VIEWS: [View, string][] = [
+  ["all", "Toute la famille"],
+  ["up", "Les ancêtres seulement"],
+  ["down", "Les descendants seulement"],
+];
+
+export function ExportDialog({
+  rootName,
+  onClose,
+  onExport,
+}: {
+  rootName: string;
+  onClose: () => void;
+  onExport: (o: ExportOpts) => Promise<void>;
+}) {
+  const [o, setO] = useState<ExportOpts>({ depth: 0, view: "all", format: "png", scene: true });
+  const [busy, setBusy] = useState(false);
+  const submit = async (e: FormEvent) => {
+    e.preventDefault();
+    setBusy(true);
+    await onExport(o);
+    setBusy(false);
+  };
+  return (
+    <Modal title="Exporter l'arbre" onClose={onClose}>
+      <form className="stack" onSubmit={submit}>
+        <fieldset className="choice">
+          <legend>Jusqu'où</legend>
+          {DEPTHS.map(([k, l]) => (
+            <label key={k} className="choice-item">
+              <input type="radio" name="depth" checked={o.depth === k} onChange={() => setO({ ...o, depth: k })} /> {l}
+            </label>
+          ))}
+        </fieldset>
+        <fieldset className="choice">
+          <legend>Autour de {rootName}</legend>
+          {VIEWS.map(([k, l]) => (
+            <label key={k} className="choice-item">
+              <input type="radio" name="view" checked={o.view === k} onChange={() => setO({ ...o, view: k })} /> {l}
+            </label>
+          ))}
+        </fieldset>
+        <label className="field">
+          <span>Format</span>
+          <select value={o.format} onChange={(e) => setO({ ...o, format: e.target.value as Format })}>
+            {Object.entries(FORMAT_LABEL).map(([k, l]) => (
+              <option key={k} value={k}>
+                {l}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="choice-item">
+          <input type="checkbox" checked={o.scene} onChange={(e) => setO({ ...o, scene: e.target.checked })} /> Garder le paysage en fond
+        </label>
+        <div className="dialog-actions">
+          <button type="button" className="btn btn-quiet" onClick={onClose}>
+            Annuler
+          </button>
+          <button className="btn btn-primary" disabled={busy}>
+            {busy ? "Préparation…" : "Télécharger"}
+          </button>
+        </div>
+      </form>
     </Modal>
   );
 }

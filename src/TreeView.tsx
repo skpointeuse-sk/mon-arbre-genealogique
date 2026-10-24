@@ -24,7 +24,8 @@ import { AMBIANCES, ambianceOf } from "./themes";
 import { Scene } from "./scenes";
 import { PersonCard } from "./card";
 import { PersonPanel, type AddRel } from "./Panel";
-import { AddDialog, CalendarDialog, CheckDialog, ShareDialog, UnionDialog } from "./dialogs";
+import { AddDialog, CalendarDialog, CheckDialog, ExportDialog, ShareDialog, UnionDialog } from "./dialogs";
+import { type ExportOpts, fileName, paintScene, sceneColors, sceneSvg, scopePeople } from "./exporting";
 import { parseGedcom } from "./gedcom";
 import { Icon, Mark } from "./icons";
 import { frError, useUi } from "./ui";
@@ -42,7 +43,9 @@ const pairKey = (u: Pick<Union, "person_a" | "person_b">) => u.person_a + "|" + 
 export function TreeView({ tree, session }: { tree: Tree; session: Session | null }) {
   const { say, ask } = useUi();
   const [t, setT] = useState(tree);
-  const { people, unions, urls, loaded, loadError, load } = useTreeData(tree.id);
+  const { people: all, unions, urls, loaded, loadError, load } = useTreeData(tree.id);
+  const [scope, setScope] = useState<ExportOpts | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
   const [role, setRole] = useState<string | null>(null);
   const [sel, setSel] = useState<string | null>(null);
   const [add, setAdd] = useState<{ rel: AddRel; of: Person } | null>(null);
@@ -72,7 +75,9 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
 
   const canEdit = (!!role && role !== "viewer") || (!!session && t.link_access === "edit");
   const canAdmin = role === "owner" || role === "co_lead";
-  const rootId = t.root_id && people.some((p) => p.id === t.root_id) ? t.root_id : (people[0]?.id ?? null);
+  const rootId = t.root_id && all.some((p) => p.id === t.root_id) ? t.root_id : (all[0]?.id ?? null);
+  // Pendant un export, seules les personnes choisies sont dessinées.
+  const people = useMemo(() => (scope ? scopePeople(all, rootId, scope.depth, scope.view) : all), [all, rootId, scope]);
   const L = useMemo(() => layout(people, rootId), [people, rootId]);
   const rels = useMemo(() => new Map(people.map((p) => [p.id, relation(people, rootId, p)])), [people, rootId]);
   const byId = useMemo(() => new Map(people.map((p) => [p.id, p])), [people]);
@@ -325,25 +330,76 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
     return true;
   };
 
-  const exportPng = async () => {
-    setMenu(false);
+  const runExport = async (o: ExportOpts) => {
     const prevSel = sel;
     setSel(null);
-    await new Promise((r) => setTimeout(r, 60));
+    setScope(o);
+    await new Promise((r) => setTimeout(r, 150));
     try {
-      const { toPng } = await import("html-to-image");
-      const bg = getComputedStyle(document.documentElement).getPropertyValue("--paper").trim() || "#eef0ea";
-      const url = await toPng(inner.current!, {
-        width: L.width + 80,
-        height: L.height + 120,
-        pixelRatio: 2,
-        backgroundColor: bg,
-        style: { transform: "translate(40px,60px)", transition: "none" },
+      const Ls = layout(scopePeople(all, rootId, o.depth, o.view), rootId);
+      const w = Ls.width + 80,
+        h = Ls.height + 150;
+      const big = o.format === "a1" || o.format === "a2";
+      const pr = Math.max(1, Math.min(big ? 4 : 3, (big ? 5000 : 8000) / Math.max(w, h)));
+      const opts = { width: w, height: h, style: { transform: "translate(40px,100px)", transition: "none" } };
+      const css = getComputedStyle(document.documentElement);
+      const ink = css.getPropertyValue("--ink").trim() || "#1d2a22";
+      const serif = css.getPropertyValue("--serif").trim() || "Georgia, serif";
+      // html-to-image perd le style CSS des traits SVG : on le fige le temps de la capture.
+      inner.current!.querySelectorAll<SVGElement>(".links path, .links line").forEach((el) => {
+        const c = getComputedStyle(el);
+        Object.assign(el.style, { stroke: c.stroke, strokeWidth: c.strokeWidth, fill: c.fill, opacity: c.opacity });
       });
-      download(url, "mon-arbre.png");
+      const lib = await import("html-to-image");
+      const name = fileName(t.title, o.format);
+      if (o.format === "svg") {
+        const url = await lib.toSvg(inner.current!, opts);
+        const raw = decodeURIComponent(url.slice(url.indexOf(",") + 1));
+        const esc = t.title.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
+        const bg = o.scene ? sceneSvg(w, h, ambiance) : `<rect width="${w}" height="${h}" fill="${sceneColors().paper}"/>`;
+        const head = `<text x="40" y="62" font-family="Georgia, serif" font-size="30" font-weight="600" fill="${sceneColors().ink}">${esc}</text>`;
+        const svg = raw.replace(/<svg[^>]*>/, (m) => m + bg + head);
+        download(URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" })), name);
+      } else {
+        const tree = await lib.toCanvas(inner.current!, { ...opts, pixelRatio: pr });
+        const c = document.createElement("canvas");
+        c.width = tree.width;
+        c.height = tree.height;
+        const ctx = c.getContext("2d")!;
+        ctx.scale(tree.width / w, tree.height / h);
+        if (o.scene) paintScene(ctx, w, h, ambiance);
+        else {
+          ctx.fillStyle = sceneColors().paper;
+          ctx.fillRect(0, 0, w, h);
+        }
+        ctx.fillStyle = ink;
+        ctx.font = `600 30px ${serif}`;
+        ctx.fillText(t.title, 40, 62);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.drawImage(tree, 0, 0);
+        if (!big) {
+          const blob = await new Promise<Blob | null>((r) => c.toBlob(r, o.format === "jpg" ? "image/jpeg" : "image/png", 0.92));
+          if (!blob) throw new Error("canvas");
+          download(URL.createObjectURL(blob), name);
+        } else {
+          const { jsPDF } = await import("jspdf");
+          const pdf = new jsPDF({ orientation: w > h ? "landscape" : "portrait", unit: "mm", format: o.format });
+          const pw = pdf.internal.pageSize.getWidth(),
+            ph = pdf.internal.pageSize.getHeight(),
+            m = 12;
+          const k = Math.min((pw - 2 * m) / w, (ph - 2 * m) / h);
+          pdf.setProperties({ title: t.title, creator: "Mon Arbre Généalogique" });
+          pdf.addImage(c.toDataURL("image/jpeg", 0.92), "JPEG", (pw - w * k) / 2, (ph - h * k) / 2, w * k, h * k);
+          pdf.save(name);
+        }
+      }
+      setExportOpen(false);
+      say("Le fichier est prêt, il se trouve dans vos téléchargements.");
     } catch {
-      say("L'image n'a pas pu être créée. Réessayez, ou exportez en GEDCOM.", "error");
+      say("L'export n'a pas pu être créé. Réessayez avec moins de générations, ou exportez en GEDCOM.", "error");
     }
+    inner.current?.querySelectorAll(".links path, .links line").forEach((el) => el.removeAttribute("style"));
+    setScope(null);
     setSel(prevSel);
   };
   const exportGed = () => {
@@ -442,9 +498,15 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
 
   const fileTools = (
     <>
-      <button className="tool" onClick={exportPng}>
+      <button
+        className="tool"
+        onClick={() => {
+          setMenu(false);
+          setExportOpen(true);
+        }}
+      >
         <Icon name="download" />
-        <span>Image PNG</span>
+        <span>Image ou PDF</span>
       </button>
       <button className="tool" onClick={exportGed}>
         <Icon name="download" />
@@ -848,6 +910,13 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
           if (f) importGed(f);
         }}
       />
+      {exportOpen && (
+        <ExportDialog
+          rootName={(rootId && all.find((p) => p.id === rootId)?.first_name) || "la racine"}
+          onClose={() => setExportOpen(false)}
+          onExport={runExport}
+        />
+      )}
       {check && (
         <CheckDialog
           people={people}
