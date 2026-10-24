@@ -1849,3 +1849,164 @@ fieldset:disabled {
   max-width: 420px;
   margin-top: 20px;
 }
+
+/* ---------- Album sous l'accueil (Album.tsx) ----------
+   Une seule audace : des tirages posés de travers, tenus par des coins photo.
+   Le reste suit la grille et les jetons de l'ambiance. */
+.album {
+  position: relative;
+  background: var(--paper);
+  border-top: 1px solid var(--rule);
+  padding: clamp(56px, 9vw, 112px) 24px clamp(48px, 8vw, 96px);
+}
+.album-titre {
+  max-width: 1160px;
+  margin: 0 auto clamp(40px, 6vw, 72px);
+  font-size: clamp(30px, 4.4vw, 46px);
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+.planche {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: clamp(28px, 5vw, 56px) 0;
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: clamp(32px, 6vw, 88px);
+  align-items: center;
+}
+.planche + .planche {
+  border-top: 1px solid var(--rule-soft);
+}
+.planche-inverse .planche-texte {
+  order: 2;
+}
+.planche-texte {
+  max-width: 46ch;
+}
+.planche-texte h3 {
+  margin: 0 0 14px;
+  font-size: clamp(24px, 2.8vw, 31px);
+  line-height: 1.18;
+  color: var(--ink);
+}
+.planche-texte p {
+  margin: 0 0 12px;
+  font-size: 17.5px;
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+.planche-images {
+  display: flex;
+  justify-content: center;
+}
+/* Deux tirages : le second recouvre le coin haut droit du premier, les légendes restent libres. */
+.planche-duo {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: start;
+}
+
+/* Le tirage : liseré clair, légende manuscrite sous la photo, coins photo en haut à gauche et en bas à droite. */
+.tirage {
+  position: relative;
+  margin: 0;
+  width: min(100%, 520px);
+  padding: 12px 12px 14px;
+  background: var(--card);
+  box-shadow:
+    0 1px 2px color-mix(in oklch, var(--ink) 18%, transparent),
+    0 14px 30px -18px color-mix(in oklch, var(--ink) 45%, transparent);
+}
+.tirage img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.tirage figcaption {
+  margin-top: 10px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+.tirage::before,
+.tirage::after {
+  content: "";
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  background: color-mix(in oklch, var(--ink) 82%, var(--paper));
+}
+.tirage::before {
+  top: -6px;
+  left: -6px;
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+}
+.tirage::after {
+  right: -6px;
+  bottom: -6px;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+.planche-duo .tirage {
+  grid-row: 1;
+  grid-column: 1 / 9;
+  width: auto;
+  margin-top: 18%;
+}
+.planche-duo .tirage-pose {
+  grid-column: 6 / 13;
+  margin-top: 0;
+  z-index: 1;
+}
+.planche-duo .tirage-etroit {
+  grid-column: 1 / 7;
+  margin-top: 12%;
+}
+.planche-duo .tirage-pose.tirage-etroit {
+  grid-column: 7 / 13;
+  margin-top: 0;
+}
+.tirage-poster {
+  width: min(100%, 640px);
+}
+.album-fin {
+  max-width: 1160px;
+  margin: clamp(32px, 6vw, 64px) auto 0;
+  padding-top: clamp(32px, 5vw, 48px);
+  border-top: 1px solid var(--rule-soft);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 28px;
+}
+.album-fin p {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(24px, 3vw, 32px);
+  color: var(--ink);
+}
+
+@media (max-width: 760px) {
+  .album {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .planche {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .planche-inverse .planche-texte {
+    order: 0;
+  }
+  .tirage {
+    padding: 8px 8px 10px;
+  }
+  .tirage::before,
+  .tirage::after {
+    width: 24px;
+    height: 24px;
+  }
+}

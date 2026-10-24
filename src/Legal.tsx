@@ -74,7 +74,8 @@ export function LegalPage() {
       <h2>Crédits</h2>
       <p>
         Polices Source Serif 4 et Atkinson Hyperlegible Next, sous licence SIL Open Font License, hébergées sur ce site. Paysages dessinés
-        pour l'application.
+        pour l'application. Photographies de l'accueil : Pexels (licence Pexels) et archives du domaine public de Wikimedia Commons.
+        L'exemple d'arbre montre une famille fictive.
       </p>
       <h2>Droit applicable</h2>
       <p>Ces mentions sont régies par le droit français.</p>

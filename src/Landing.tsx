@@ -6,6 +6,7 @@ import { PersonCard } from "./card";
 import type { Person } from "./lib";
 import { Scene } from "./scenes";
 import { AMBIANCES, saveAmbiance, savedAmbiance } from "./themes";
+import { Album } from "./Album";
 
 /* Personnes fictives de démonstration (déjà présentes dans l'ancienne page d'accueil). */
 const demo = (
@@ -203,6 +204,16 @@ export function Landing() {
           <figcaption>Exemple fictif. Chaque carte s'ouvre sur une fiche : dates, lieux, métier, photo, souvenirs.</figcaption>
         </figure>
       </main>
+
+      <Album
+        onStart={() => {
+          setMode("up");
+          setMsg(null);
+          const form = document.getElementById("acces");
+          form?.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+          form?.querySelector<HTMLInputElement>("input[type=email]")?.focus({ preventScroll: true });
+        }}
+      />
 
       <footer className="landing-foot">
         <p>Vos données restent privées : un arbre n'est visible que par les personnes invitées, ou par lien si vous l'activez.</p>

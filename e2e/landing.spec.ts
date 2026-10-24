@@ -5,7 +5,7 @@ test("la page d'accueil s'affiche sans erreur ni défilement horizontal", async 
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.getByRole("button", { name: /créer mon arbre/i })).toBeVisible();
+  await expect(page.locator("#acces").getByRole("button", { name: /créer mon arbre/i })).toBeVisible();
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
   expect(overflow).toBeLessThanOrEqual(0);
   await page.screenshot({ path: `test-results/accueil-${info.project.name}.png`, fullPage: true });
@@ -57,4 +57,16 @@ test("mot de passe oublié : message neutre, puis page du nouveau mot de passe",
   expect(asked).toBe("jeanne@example.com");
   await page.goto("/nouveau-mot-de-passe");
   await expect(page.getByText("Ce lien a expiré ou a déjà servi")).toBeVisible();
+});
+
+test("l'album se termine par un bouton qui ramène au formulaire", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Ce que votre arbre peut contenir" })).toBeAttached();
+  const imgs = page.locator(".album img");
+  await expect(imgs).toHaveCount(7);
+  for (const alt of await imgs.evaluateAll((els) => els.map((e) => e.getAttribute("alt") ?? ""))) expect(alt.length).toBeGreaterThan(20);
+  await page.getByRole("tab", { name: "Se connecter" }).click();
+  await page.locator(".album-fin").getByRole("button", { name: "Créer mon arbre" }).click();
+  await expect(page.getByLabel("Email")).toBeFocused();
+  await expect(page.getByRole("tab", { name: "Créer un compte" })).toHaveAttribute("aria-selected", "true");
 });

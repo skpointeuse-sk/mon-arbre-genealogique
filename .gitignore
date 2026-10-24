@@ -4,3 +4,6 @@ dist
 .env*
 test-results
 playwright-report
+
+# Originaux des images (téléchargés depuis les sources de CREDITS.md), traités par scripts/images.mjs
+assets-src/
