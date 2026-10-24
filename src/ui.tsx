@@ -1,15 +1,16 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useEffectEvent, useRef, useState, type ReactNode } from "react";
 import { Icon } from "./icons";
 
 /* Fenêtre modale : Échap ferme, le focus va dans la fenêtre puis revient où il était. */
 export function Modal({ title, children, onClose, wide }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
+  const close = useEffectEvent(onClose);
   useEffect(() => {
     const prev = document.activeElement as HTMLElement | null;
     const first = ref.current?.querySelector<HTMLElement>("[autofocus], input, select, textarea, button:not(.dialog-close)");
     (first ?? ref.current)?.focus();
     const k = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") close();
     };
     window.addEventListener("keydown", k);
     return () => {

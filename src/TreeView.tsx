@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as RKE } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type KeyboardEvent as RKE } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
 import {
@@ -9,7 +9,6 @@ import {
   H,
   ROW,
   W,
-  clean,
   compress,
   download,
   fullName,
@@ -28,19 +27,21 @@ import { PersonPanel, type AddRel } from "./Panel";
 import { AddDialog, CalendarDialog, ShareDialog, UnionDialog } from "./dialogs";
 import { Icon, Mark } from "./icons";
 import { frError, useUi } from "./ui";
+import { useTreeData } from "./useTreeData";
+import { KMIN, useView } from "./useView";
 
-type View = { x: number; y: number; k: number };
-const KMIN = 0.15,
-  KMAX = 2;
 const PANEL_W = 400;
 const isWide = () => window.innerWidth >= 900;
+
+/* Un état de l'arbre pour Annuler / Rétablir : les fiches et les unions ensemble,
+   car supprimer une personne efface aussi ses unions. */
+type Snapshot = { people: Person[]; unions: Union[] };
+const pairKey = (u: Pick<Union, "person_a" | "person_b">) => u.person_a + "|" + u.person_b;
 
 export function TreeView({ tree, session }: { tree: Tree; session: Session | null }) {
   const { say, ask } = useUi();
   const [t, setT] = useState(tree);
-  const [people, setPeople] = useState<Person[]>([]);
-  const [loaded, setLoaded] = useState(false);
-  const [loadError, setLoadError] = useState("");
+  const { people, unions, urls, loaded, loadError, load } = useTreeData(tree.id);
   const [role, setRole] = useState<string | null>(null);
   const [sel, setSel] = useState<string | null>(null);
   const [add, setAdd] = useState<{ rel: AddRel; of: Person } | null>(null);
@@ -48,52 +49,12 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
   const [cal, setCal] = useState(false);
   const [menu, setMenu] = useState(false);
   const [un, setUn] = useState<{ a: string; b: string } | null>(null);
-  const [urls, setUrls] = useState<Record<string, string>>({});
-  const [unions, setUnions] = useState<Union[]>([]);
-  const [v, setV] = useState<View>({ x: 0, y: 0, k: 0.9 });
-  const [anim, setAnim] = useState(false);
-  const box = useRef<HTMLDivElement>(null);
+  const box = useRef<HTMLElement>(null);
   const inner = useRef<HTMLDivElement>(null);
   const centered = useRef(false);
-  const hist = useRef<{ u: Person[][]; r: Person[][] }>({ u: [], r: [] });
-  const pointers = useRef(new Map<number, { x: number; y: number }>());
-  const gesture = useRef({ moved: false, dist: 0 });
-  const vRef = useRef(v);
-  vRef.current = v;
+  const hist = useRef<{ u: Snapshot[]; r: Snapshot[] }>({ u: [], r: [] });
+  const { v, setV, vRef, anim, animate, zoomAt, pan, gesture, handlers } = useView(box);
 
-  const load = useCallback(async () => {
-    const { data, error } = await supabase.from("people").select("*").eq("tree_id", tree.id).order("created_at");
-    if (error) {
-      setLoadError(frError(error.message));
-      setLoaded(true);
-      return;
-    }
-    const ps = ((data as Person[]) || []).map(clean);
-    setPeople(ps);
-    setLoaded(true);
-    const paths = ps.filter((p) => p.photo_path).map((p) => p.photo_path!);
-    if (paths.length) {
-      const { data: sg } = await supabase.storage.from("tree-media").createSignedUrls(paths, 3600);
-      const m: Record<string, string> = {};
-      sg?.forEach((x) => {
-        if (x.path && x.signedUrl) m[x.path] = x.signedUrl;
-      });
-      setUrls(m);
-    }
-    const { data: u } = await supabase.from("unions").select("*").eq("tree_id", tree.id);
-    setUnions((u as Union[]) || []);
-  }, [tree.id]);
-
-  useEffect(() => {
-    load();
-    const ch = supabase
-      .channel("p-" + tree.id)
-      .on("postgres_changes", { event: "*", schema: "public", table: "people", filter: `tree_id=eq.${tree.id}` }, load)
-      .subscribe();
-    return () => {
-      supabase.removeChannel(ch);
-    };
-  }, [tree.id, load]);
   useEffect(() => {
     if (session)
       supabase
@@ -128,19 +89,13 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
     return s;
   }, [selected, people]);
 
-  /* ---------- Vue : déplacement, zoom, recentrage ---------- */
+  /* ---------- Vue : recentrage ---------- */
   const area = () => {
     const b = box.current!;
     const panel = !!sel;
     const w = b.clientWidth - (panel && isWide() ? PANEL_W : 0);
     const h = panel && !isWide() ? b.clientHeight * 0.42 : b.clientHeight;
     return { w, h };
-  };
-  const animate = (nv: View) => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    setAnim(!reduce);
-    setV(nv);
-    window.setTimeout(() => setAnim(false), 380);
   };
   const center = (id: string | null, k = vRef.current.k, withPanel = !!sel) => {
     const c = id ? L.pos.get(id) : undefined,
@@ -156,80 +111,18 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
     const k = Math.max(KMIN, Math.min(1, (w - 48) / L.width, (h - 96) / (L.height + 40)));
     animate({ k, x: (w - L.width * k) / 2, y: (h - L.height * k) / 2 + 10 });
   };
-  const zoomAt = (f: number, cx?: number, cy?: number, smooth = false) => {
-    const b = box.current!,
-      o = vRef.current;
-    const px = cx ?? b.clientWidth / 2,
-      py = cy ?? b.clientHeight / 2;
-    const k = Math.min(KMAX, Math.max(KMIN, o.k * f)),
-      r = k / o.k;
-    const nv = { k, x: px - (px - o.x) * r, y: py - (py - o.y) * r };
-    if (smooth) animate(nv);
-    else setV(nv);
-  };
-  const pan = (dx: number, dy: number) => animate({ ...vRef.current, x: vRef.current.x + dx, y: vRef.current.y + dy });
 
-  useEffect(() => {
-    if (people.length && !centered.current && box.current) {
-      centered.current = true;
-      const k = isWide() ? 0.9 : 0.62;
-      const c = rootId ? L.pos.get(rootId) : undefined;
-      const b = box.current;
-      if (c) setV({ k, x: b.clientWidth / 2 - (c.x + W / 2) * k, y: b.clientHeight / 2 - (c.y + H / 2) * k });
-    }
-  }, [people.length]);
-
-  // Molette : zoom autour du curseur (écouteur non passif pour bloquer le défilement de la page)
-  useEffect(() => {
+  // Premier affichage : la racine au centre de l'écran.
+  const centerFirst = useEffectEvent(() => {
+    if (!people.length || centered.current || !box.current) return;
+    centered.current = true;
+    const k = isWide() ? 0.9 : 0.62;
+    const c = rootId ? L.pos.get(rootId) : undefined;
     const b = box.current;
-    if (!b) return;
-    const wheel = (e: WheelEvent) => {
-      e.preventDefault();
-      const r = b.getBoundingClientRect();
-      if (e.ctrlKey || Math.abs(e.deltaY) >= Math.abs(e.deltaX))
-        zoomAt(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0015)), e.clientX - r.left, e.clientY - r.top);
-      else setV((o) => ({ ...o, x: o.x - e.deltaX }));
-    };
-    b.addEventListener("wheel", wheel, { passive: false });
-    return () => b.removeEventListener("wheel", wheel);
-  }, [loaded]);
+    if (c) setV({ k, x: b.clientWidth / 2 - (c.x + W / 2) * k, y: b.clientHeight / 2 - (c.y + H / 2) * k });
+  });
+  useEffect(() => centerFirst(), [people.length]);
 
-  // Doigts et souris : un pointeur déplace, deux pointeurs zooment
-  const onPointerDown = (e: React.PointerEvent) => {
-    if (e.button !== 0 && e.pointerType === "mouse") return;
-    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (pointers.current.size === 1) gesture.current.moved = false;
-    if (pointers.current.size === 2) {
-      const [a, b] = [...pointers.current.values()];
-      gesture.current.dist = Math.hypot(a.x - b.x, a.y - b.y);
-    }
-  };
-  const onPointerMove = (e: React.PointerEvent) => {
-    const prev = pointers.current.get(e.pointerId);
-    if (!prev) return;
-    const cur = { x: e.clientX, y: e.clientY };
-    if (pointers.current.size === 1) {
-      const dx = cur.x - prev.x,
-        dy = cur.y - prev.y;
-      if (!gesture.current.moved && Math.abs(dx) + Math.abs(dy) < 3) return;
-      gesture.current.moved = true;
-      if (!box.current!.hasPointerCapture(e.pointerId)) box.current!.setPointerCapture(e.pointerId);
-      pointers.current.set(e.pointerId, cur);
-      setV((o) => ({ ...o, x: o.x + dx, y: o.y + dy }));
-    } else if (pointers.current.size === 2) {
-      pointers.current.set(e.pointerId, cur);
-      const [a, b] = [...pointers.current.values()];
-      const d = Math.hypot(a.x - b.x, a.y - b.y);
-      const r = box.current!.getBoundingClientRect();
-      if (gesture.current.dist) zoomAt(d / gesture.current.dist, (a.x + b.x) / 2 - r.left, (a.y + b.y) / 2 - r.top);
-      gesture.current.dist = d;
-      gesture.current.moved = true;
-    }
-  };
-  const onPointerUp = (e: React.PointerEvent) => {
-    pointers.current.delete(e.pointerId);
-    if (pointers.current.size < 2) gesture.current.dist = 0;
-  };
   const onKey = (e: RKE) => {
     if (e.target !== box.current) return;
     const step = 80;
@@ -255,48 +148,56 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
   };
   const go = (id: string) => select(id, true);
 
-  /* ---------- Écritures (identiques à la version précédente) ---------- */
+  /* ---------- Écritures ---------- */
   const patch = (id: string, d: Record<string, unknown>) => supabase.from("people").update(d).eq("id", id);
+  const now = (): Snapshot => ({ people, unions });
   const snap = () => {
-    hist.current = { u: [...hist.current.u.slice(-29), people], r: [] };
+    hist.current = { u: [...hist.current.u.slice(-29), now()], r: [] };
   };
-  const restore = async (rows: Person[]) => {
-    const keep = new Set(rows.map((p) => p.id)),
+  const restore = async (s: Snapshot) => {
+    const keep = new Set(s.people.map((p) => p.id)),
       gone = people.filter((p) => !keep.has(p.id)).map((p) => p.id);
     if (gone.length) await supabase.from("people").delete().in("id", gone);
-    if (rows.length) await supabase.from("people").upsert(rows);
+    if (s.people.length) await supabase.from("people").upsert(s.people);
+    // Unions : on retire celles ajoutées depuis, puis on remet celles de l'état restauré.
+    const want = new Set(s.unions.map(pairKey));
+    for (const u of unions)
+      if (!want.has(pairKey(u)))
+        await supabase.from("unions").delete().eq("tree_id", t.id).eq("person_a", u.person_a).eq("person_b", u.person_b);
+    if (s.unions.length) await supabase.from("unions").upsert(s.unions);
     load();
   };
   const undo = async () => {
     const prev = hist.current.u.pop();
     if (!prev) return say("Rien à annuler.");
-    hist.current.r.push(people);
+    hist.current.r.push(now());
     await restore(prev);
     say("Modification annulée.");
   };
   const redo = async () => {
     const nxt = hist.current.r.pop();
     if (!nxt) return say("Rien à rétablir.");
-    hist.current.u.push(people);
+    hist.current.u.push(now());
     await restore(nxt);
     say("Modification rétablie.");
   };
+  const onShortcut = useEffectEvent((e: KeyboardEvent) => {
+    const tag = (e.target as HTMLElement).tagName;
+    if (!canEdit || !(e.ctrlKey || e.metaKey) || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+    const key = e.key.toLowerCase();
+    if (key === "z" && !e.shiftKey) {
+      e.preventDefault();
+      undo();
+    } else if (key === "y" || (key === "z" && e.shiftKey)) {
+      e.preventDefault();
+      redo();
+    }
+  });
   useEffect(() => {
-    const k = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement).tagName;
-      if (!canEdit || !(e.ctrlKey || e.metaKey) || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-      const key = e.key.toLowerCase();
-      if (key === "z" && !e.shiftKey) {
-        e.preventDefault();
-        undo();
-      } else if (key === "y" || (key === "z" && e.shiftKey)) {
-        e.preventDefault();
-        redo();
-      }
-    };
+    const k = (e: KeyboardEvent) => onShortcut(e);
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
-  }, [people, canEdit]);
+  }, []);
 
   const onPhoto = async (p: Person, f: File) => {
     try {
@@ -313,6 +214,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
   };
   const saveUnion = async (d: { type: string; date: string; place: string; notes: string }) => {
     if (!un) return false;
+    snap();
     const { error } = await supabase.from("unions").upsert({
       tree_id: t.id,
       person_a: un.a,
@@ -682,10 +584,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
         className={"stage" + (sel ? " has-panel" : "")}
         tabIndex={0}
         aria-label="Arbre généalogique. Flèches pour se déplacer, plus et moins pour zoomer, zéro pour tout afficher."
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
+        {...handlers}
         onKeyDown={onKey}
         onClick={(e) => {
           if (e.target === box.current && !gesture.current.moved) setSel(null);
