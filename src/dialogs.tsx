@@ -206,7 +206,9 @@ export function ShareDialog({
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
   const [sent, setSent] = useState(0);
-  const link = `${location.origin}/partage/${tree.id}`;
+  // Le lien partagé porte toujours l'adresse publique, même ouvert depuis un aperçu vercel.app
+  const origin = location.hostname.endsWith(".vercel.app") ? "https://arbre.skdigital.fr" : location.origin;
+  const link = `${origin}/partage/${tree.id}`;
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setErr("Saisissez une adresse email valide.");
