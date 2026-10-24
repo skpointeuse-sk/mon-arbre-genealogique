@@ -1015,14 +1015,20 @@ fieldset:disabled {
   flex: 1;
 }
 
-/* Canevas */
+/* Canevas. Pendant l'arbre, la page ne rebondit pas : le doigt reste au canevas. */
+html[data-ambiance],
+html[data-ambiance] body {
+  overscroll-behavior: none;
+}
 .stage {
   position: relative;
   flex: 1;
   overflow: hidden;
   touch-action: none;
+  overscroll-behavior: none;
   user-select: none;
   -webkit-user-select: none;
+  -webkit-touch-callout: none;
   cursor: grab;
   outline: none;
 }
@@ -1143,6 +1149,13 @@ fieldset:disabled {
   top: 0;
   transform-origin: 0 0;
   will-change: transform;
+  /* Le plan a la taille de l'arbre (posée en ligne) pour que Safari iOS ne jette pas le calque
+     quand son coin sort de l'écran. Les touchers dans le vide retombent sur le canevas. */
+  pointer-events: none;
+}
+.plane .card,
+.plane .union {
+  pointer-events: auto;
 }
 .plane.is-animating {
   transition: transform 0.36s cubic-bezier(0.2, 0.7, 0.2, 1);

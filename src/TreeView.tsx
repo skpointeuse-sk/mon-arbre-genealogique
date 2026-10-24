@@ -61,7 +61,6 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
   const inner = useRef<HTMLDivElement>(null);
   const centered = useRef(false);
   const hist = useRef<{ u: Step[]; r: Step[] }>({ u: [], r: [] });
-  const { v, setV, vRef, anim, animate, zoomAt, pan, gesture, handlers } = useView(box);
 
   useEffect(() => {
     if (session)
@@ -81,6 +80,8 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
   // Pendant un export, seules les personnes choisies sont dessinées.
   const people = useMemo(() => (scope ? scopePeople(all, rootId, scope.depth, scope.view) : all), [all, rootId, scope]);
   const L = useMemo(() => layout(people, rootId), [people, rootId]);
+  const cardSpots = useMemo(() => [...L.pos.values()], [L]);
+  const { v, setV, vRef, anim, animate, zoomAt, pan, gesture, handlers } = useView(box, cardSpots);
   const rels = useMemo(() => new Map(people.map((p) => [p.id, relation(people, rootId, p)])), [people, rootId]);
   const byId = useMemo(() => new Map(people.map((p) => [p.id, p])), [people]);
   const selected = sel ? (byId.get(sel) ?? null) : null;
@@ -816,7 +817,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
         <div
           ref={inner}
           className={"plane" + (anim ? " is-animating" : "")}
-          style={{ transform: `translate(${v.x}px,${v.y}px) scale(${v.k})`, "--k": v.k } as CSSProperties}
+          style={{ width: L.width, height: L.height, transform: `translate(${v.x}px,${v.y}px) scale(${v.k})`, "--k": v.k } as CSSProperties}
         >
           <svg className="links" width={L.width || 1} height={L.height || 1} aria-hidden="true">
             {lines.map((l) => (
