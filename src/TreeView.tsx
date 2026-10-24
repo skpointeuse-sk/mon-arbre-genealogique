@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useMemo, useRef, useState, type KeyboardEvent as RKE } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as RKE } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
 import {
@@ -645,7 +645,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
   );
 
   const search = (
-    <div className="search" role="combobox" aria-expanded={qOpen && matches.length > 0} aria-haspopup="listbox" aria-owns="search-list">
+    <div className="search" role="combobox" aria-expanded={qOpen && matches.length > 0} aria-haspopup="listbox">
       <Icon name="search" size={18} />
       <input
         type="search"
@@ -675,8 +675,8 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
             setSearchMobile(false);
           }
         }}
-        aria-activedescendant={matches[qi] ? "opt-" + matches[qi].id : undefined}
-        aria-controls="search-list"
+        aria-activedescendant={qOpen && q.trim() && matches[qi] ? "opt-" + matches[qi].id : undefined}
+        aria-controls={qOpen && q.trim() ? "search-list" : undefined}
       />
       {qOpen && q.trim() && (
         <ul id="search-list" role="listbox" className="search-list">
@@ -777,7 +777,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
         <div
           ref={inner}
           className={"plane" + (anim ? " is-animating" : "")}
-          style={{ transform: `translate(${v.x}px,${v.y}px) scale(${v.k})` }}
+          style={{ transform: `translate(${v.x}px,${v.y}px) scale(${v.k})`, "--k": v.k } as CSSProperties}
         >
           <svg className="links" width={L.width || 1} height={L.height || 1} aria-hidden="true">
             {lines.map((l) => (
@@ -863,7 +863,11 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
           <button className="icon-btn" onClick={fit} aria-label="Tout afficher" title="Tout afficher">
             <Icon name="fit" />
           </button>
-          <button className="btn btn-quiet btn-small" onClick={() => center(rootId, Math.max(v.k, 0.8))}>
+          <button
+            className="btn btn-quiet btn-small"
+            onClick={() => center(rootId, Math.max(v.k, 0.8))}
+            title={rootId && rels.get(rootId) === "Vous" ? "Revenir à moi" : "Recentrer"}
+          >
             <Icon name="target" size={18} /> <span>{rootId && rels.get(rootId) === "Vous" ? "Revenir à moi" : "Recentrer"}</span>
           </button>
         </div>

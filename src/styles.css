@@ -394,8 +394,11 @@ fieldset:disabled {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
+/* Les proches restent en couleur, les autres passent en gris : le texte reste lisible. */
 .card.is-dim {
-  opacity: 0.32;
+  filter: grayscale(1);
+  border-color: var(--rule-soft);
+  box-shadow: none;
 }
 .card-face {
   width: 46px;
@@ -1170,11 +1173,14 @@ fieldset:disabled {
 .links .off {
   opacity: 0.25;
 }
+/* Taille compensée par le zoom : au moins 26 px à l'écran, comme le demande WCAG 2.2. */
 .union {
   position: absolute;
-  width: 24px;
-  height: 24px;
-  margin: -12px 0 0 -12px;
+  --u: max(28px, calc(26px / var(--k, 1)));
+  width: var(--u);
+  height: var(--u);
+  z-index: 2;
+  margin: calc(var(--u) / -2) 0 0 calc(var(--u) / -2);
   padding: 0;
   display: grid;
   place-items: center;
@@ -1270,7 +1276,11 @@ fieldset:disabled {
 }
 @media (max-width: 420px) {
   .zoom .btn-small span {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
   }
 }
 
@@ -1766,4 +1776,67 @@ fieldset:disabled {
   color: var(--paper);
   font-size: 12px;
   font-weight: 700;
+}
+
+/* Pages légales (Legal.tsx) */
+.legal {
+  min-height: 100dvh;
+  background: var(--paper);
+  color: var(--ink);
+}
+.legal-bar {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.legal-home {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--oak);
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.legal-main {
+  max-width: 68ch;
+  margin: 0 auto;
+  padding: 40px 24px 64px;
+  line-height: 1.6;
+}
+.legal-main p {
+  margin: 0 0 12px;
+}
+.legal-main h1 {
+  font-size: clamp(30px, 5vw, 40px);
+  margin-bottom: 4px;
+}
+.legal-main h2 {
+  font-size: 21px;
+  margin: 32px 0 6px;
+}
+.legal-main a {
+  color: var(--oak);
+}
+.legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+  font-size: 14px;
+}
+.legal-main .legal-links {
+  margin-top: 48px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule-soft);
+}
+.landing-foot .legal-links a {
+  color: inherit;
+}
+@media (max-width: 500px) {
+  .legal-bar {
+    padding: 14px 16px;
+  }
+  .legal-main {
+    padding: 28px 16px 48px;
+  }
 }

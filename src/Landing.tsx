@@ -184,6 +184,10 @@ export function Landing() {
 
       <footer className="landing-foot">
         <p>Vos données restent privées : un arbre n'est visible que par les personnes invitées, ou par lien si vous l'activez.</p>
+        <p className="legal-links">
+          <a href="/confidentialite">Confidentialité</a>
+          <a href="/mentions-legales">Mentions légales</a>
+        </p>
       </footer>
     </div>
   );

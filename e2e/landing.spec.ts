@@ -29,3 +29,14 @@ test("un ancien lien de partage est redirigé", async ({ page }) => {
   await expect(page).toHaveURL(/\/partage\/00000000-0000-0000-0000-000000000000$/);
   await expect(page.getByText("Cet arbre est privé ou n'existe pas.")).toBeVisible();
 });
+
+test("les pages légales s'ouvrent depuis l'accueil", async ({ page }, info) => {
+  await page.goto("/");
+  await page.getByRole("link", { name: "Confidentialité" }).click();
+  await expect(page.getByRole("heading", { name: "Confidentialité", level: 1 })).toBeVisible();
+  await expect(page.getByText("Aucun cookie publicitaire")).toBeVisible();
+  await page.screenshot({ path: `test-results/confidentialite-${info.project.name}.png`, fullPage: true });
+  await page.getByRole("link", { name: "Mentions légales" }).click();
+  await expect(page.getByText("939 387 510 00018")).toBeVisible();
+  await expect(page).toHaveTitle("Mentions légales, Mon Arbre Généalogique");
+});
