@@ -97,7 +97,7 @@ export function ShareDialog({ tree, role, onClose, onAccess, onInvite }: { tree:
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
-  const link = `${location.origin}/?arbre=${tree.id}`;
+  const link = `${location.origin}/partage/${tree.id}`;
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setErr("Saisissez une adresse email valide.");
