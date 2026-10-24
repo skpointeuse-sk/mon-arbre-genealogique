@@ -21,6 +21,8 @@ const P: Record<string, string> = {
   back: "M15 5l-7 7 7 7",
   chevron: "m9 5 7 7-7 7",
   layers: "M12 4 3 9l9 5 9-5-9-5ZM3 14l9 5 9-5",
+  upload: "M12 15V4M7 9l5-5 5 5M5 20h14",
+  check: "M4 12.5 9 17.5 20 6.5",
 };
 
 export function Icon({ name, size = 20, label }: { name: keyof typeof P | string; size?: number; label?: string }) {

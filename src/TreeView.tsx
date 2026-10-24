@@ -24,7 +24,8 @@ import { AMBIANCES, ambianceOf } from "./themes";
 import { Scene } from "./scenes";
 import { PersonCard } from "./card";
 import { PersonPanel, type AddRel } from "./Panel";
-import { AddDialog, CalendarDialog, ShareDialog, UnionDialog } from "./dialogs";
+import { AddDialog, CalendarDialog, CheckDialog, ShareDialog, UnionDialog } from "./dialogs";
+import { parseGedcom } from "./gedcom";
 import { Icon, Mark } from "./icons";
 import { frError, useUi } from "./ui";
 import { useTreeData } from "./useTreeData";
@@ -49,6 +50,8 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
   const [cal, setCal] = useState(false);
   const [menu, setMenu] = useState(false);
   const [un, setUn] = useState<{ a: string; b: string } | null>(null);
+  const [check, setCheck] = useState(false);
+  const gedInput = useRef<HTMLInputElement>(null);
   const box = useRef<HTMLElement>(null);
   const inner = useRef<HTMLDivElement>(null);
   const centered = useRef(false);
@@ -346,6 +349,30 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
     setMenu(false);
     download(URL.createObjectURL(new Blob([toGedcom(people)], { type: "text/plain" })), "mon-arbre.ged");
   };
+  // Import : les personnes du fichier s'ajoutent à l'arbre, rien n'est remplacé ni supprimé.
+  const importGed = async (file: File) => {
+    if (file.size > 5 * 1024 * 1024) return say("Ce fichier dépasse 5 Mo. Exportez une partie de l'arbre depuis votre logiciel.", "error");
+    const { people: rows, skipped } = parseGedcom(await file.text(), t.id);
+    if (!rows.length)
+      return say("Aucune personne trouvée dans ce fichier. Vérifiez qu'il s'agit bien d'un fichier GEDCOM (.ged).", "error");
+    const ok = await ask(
+      `Ajouter ${rows.length} personne${rows.length > 1 ? "s" : ""} de « ${file.name} » à l'arbre ? Les fiches existantes ne sont pas modifiées.`,
+      "Importer",
+    );
+    if (!ok) return;
+    snap();
+    for (let i = 0; i < rows.length; i += 200) {
+      const { error } = await supabase.from("people").insert(rows.slice(i, i + 200));
+      if (error) {
+        say(frError(error.message), "error");
+        break;
+      }
+    }
+    await load();
+    say(
+      `${rows.length} personne${rows.length > 1 ? "s ajoutées" : " ajoutée"}.${skipped ? ` ${skipped} fiche${skipped > 1 ? "s" : ""} sans nom ignorée${skipped > 1 ? "s" : ""}.` : ""}`,
+    );
+  };
 
   /* ---------- Recherche ---------- */
   const [q, setQ] = useState("");
@@ -443,6 +470,28 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
       <button className="tool" onClick={exportGed}>
         <Icon name="download" />
         <span>Fichier GEDCOM</span>
+      </button>
+      {canEdit && (
+        <button
+          className="tool"
+          onClick={() => {
+            setMenu(false);
+            gedInput.current?.click();
+          }}
+        >
+          <Icon name="upload" />
+          <span>Importer</span>
+        </button>
+      )}
+      <button
+        className="tool"
+        onClick={() => {
+          setMenu(false);
+          setCheck(true);
+        }}
+      >
+        <Icon name="check" />
+        <span>Vérifier</span>
       </button>
       {canAdmin && (
         <label className="tool tool-select">
@@ -756,6 +805,28 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
           canEdit={canEdit}
           onClose={() => setUn(null)}
           onSave={saveUnion}
+        />
+      )}
+      <input
+        ref={gedInput}
+        type="file"
+        accept=".ged,.GED,text/plain"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = "";
+          if (f) importGed(f);
+        }}
+      />
+      {check && (
+        <CheckDialog
+          people={people}
+          unions={unions}
+          onClose={() => setCheck(false)}
+          onGo={(id) => {
+            setCheck(false);
+            go(id);
+          }}
         />
       )}
       {cal && (

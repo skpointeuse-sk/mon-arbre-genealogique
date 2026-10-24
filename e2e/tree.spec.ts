@@ -25,3 +25,10 @@ test("la recherche retrouve une personne", async ({ page }, info) => {
   await page.getByRole("searchbox", { name: "Rechercher une personne" }).fill("emma");
   await expect(page.getByRole("option", { name: /Emma Martin/ })).toBeVisible();
 });
+
+test("le vérificateur s'ouvre et ne signale rien sur une famille cohérente", async ({ page }, info) => {
+  if (info.project.name === "mobile") await page.getByRole("button", { name: "Menu" }).click();
+  await page.getByRole("button", { name: "Vérifier" }).click();
+  await expect(page.getByText("Rien à signaler")).toBeVisible();
+  await page.screenshot({ path: `test-results/verifier-${info.project.name}.png` });
+});
