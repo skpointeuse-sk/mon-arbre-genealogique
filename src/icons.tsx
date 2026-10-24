@@ -23,6 +23,7 @@ const P: Record<string, string> = {
   layers: "M12 4 3 9l9 5 9-5-9-5ZM3 14l9 5 9-5",
   upload: "M12 15V4M7 9l5-5 5 5M5 20h14",
   check: "M4 12.5 9 17.5 20 6.5",
+  history: "M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4M12 8v4l3 2",
 };
 
 export function Icon({ name, size = 20, label }: { name: keyof typeof P | string; size?: number; label?: string }) {

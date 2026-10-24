@@ -13,6 +13,8 @@ for (const width of [1440, 1280, 1180, 1000, 901]) {
     const right = await page.locator(".topbar-tools > :last-child").evaluate((el) => el.getBoundingClientRect().right);
     await page.screenshot({ path: `test-results/barre-${width}.png`, clip: { x: 0, y: 0, width, height: 70 } });
     expect(right).toBeLessThanOrEqual(width);
+    const title = page.locator(".topbar-title");
+    expect(await title.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
   });
 }
 
@@ -48,3 +50,24 @@ for (const [format, ext] of [
     await expect(page.getByText("Le fichier est prêt")).toBeVisible();
   });
 }
+
+test("le propriétaire voit les membres et peut changer leurs droits", async ({ page }) => {
+  await mockTree(page, "prairie");
+  await mockOwner(page);
+  await page.goto(`/partage/${TREE}`);
+  await page.getByRole("button", { name: "Partager" }).click();
+  await expect(page.getByText("Steven (vous)")).toBeVisible();
+  await expect(page.getByRole("combobox", { name: "Droits de Mamie Jeanne" })).toHaveValue("editor");
+  await expect(page.getByText("oncle@example.com")).toBeVisible();
+  await page.screenshot({ path: "test-results/membres-desktop.png" });
+});
+
+test("l'historique raconte les modifications", async ({ page }) => {
+  await mockTree(page, "prairie");
+  await mockOwner(page);
+  await page.goto(`/partage/${TREE}`);
+  await page.getByRole("button", { name: "Historique" }).click();
+  await expect(page.getByText("a modifié Paul Martin (naissance, métier)")).toBeVisible();
+  await expect(page.getByText("a ajouté Emma Martin")).toBeVisible();
+  await page.screenshot({ path: "test-results/historique-desktop.png" });
+});

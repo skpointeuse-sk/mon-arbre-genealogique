@@ -4,6 +4,7 @@ import { Modal } from "./ui";
 import { checkFamily } from "./check";
 import { type Depth, type ExportOpts, type Format, type View, FORMAT_LABEL } from "./exporting";
 import { ADD_LABEL, type AddRel } from "./Panel";
+import { Members } from "./members";
 
 export function AddDialog({
   rel,
@@ -186,9 +187,11 @@ export function ShareDialog({
   onClose,
   onAccess,
   onInvite,
+  me,
 }: {
   tree: Tree;
   role: string | null;
+  me: string;
   onClose: () => void;
   onAccess: (v: string) => void;
   onInvite: (email: string, role: string) => Promise<boolean>;
@@ -198,13 +201,17 @@ export function ShareDialog({
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [sent, setSent] = useState(0);
   const link = `${location.origin}/partage/${tree.id}`;
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setErr("Saisissez une adresse email valide.");
     setErr("");
     setBusy(true);
-    if (await onInvite(email, r)) setEmail("");
+    if (await onInvite(email, r)) {
+      setEmail("");
+      setSent((n) => n + 1);
+    }
     setBusy(false);
   };
   return (
@@ -258,6 +265,7 @@ export function ShareDialog({
           </button>
           <small className="muted">La personne verra l'arbre en se connectant avec cet email.</small>
         </form>
+        <Members treeId={tree.id} role={role} me={me} refresh={sent} />
       </div>
     </Modal>
   );

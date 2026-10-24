@@ -3,6 +3,8 @@ import { type Person, type Union, toGedcom } from "./lib";
 import { frDate, parseGedcom } from "./gedcom";
 import { checkFamily } from "./check";
 import { fileName, scopePeople } from "./exporting";
+import { rolesFor } from "./members";
+import { describe as tell } from "./history";
 
 const person = (id: string, first: string, extra: Partial<Person> = {}): Person => ({
   id,
@@ -165,5 +167,27 @@ describe("choix de l'export", () => {
   it("donne un nom de fichier lisible", () => {
     expect(fileName("Famille Lefèvre & co", "a2")).toBe("famille-lefevre-co-a2.pdf");
     expect(fileName("", "png")).toBe("mon-arbre.png");
+  });
+});
+
+describe("droits sur les membres", () => {
+  it("suit les mêmes règles que la base", () => {
+    expect(rolesFor("owner", "owner")).toEqual([]);
+    expect(rolesFor("owner", "editor")).toEqual(["co_lead", "editor", "viewer"]);
+    expect(rolesFor("co_lead", "co_lead")).toEqual([]);
+    expect(rolesFor("co_lead", "viewer")).toEqual(["editor", "viewer"]);
+    expect(rolesFor("editor", "viewer")).toEqual([]);
+  });
+});
+
+describe("phrases de l'historique", () => {
+  const e = { id: 1, user_id: null, at: "", label: "Paul Martin", fields: [] as string[] };
+  it("raconte chaque type de changement", () => {
+    expect(tell({ ...e, kind: "ajout", target: "personne" })).toBe("a ajouté Paul Martin");
+    expect(tell({ ...e, kind: "modification", target: "personne", fields: ["death", "notes"] })).toBe(
+      "a modifié Paul Martin (décès, notes)",
+    );
+    expect(tell({ ...e, kind: "modification", target: "membre", fields: ["viewer"] })).toBe("a passé Paul Martin en « lecture seule »");
+    expect(tell({ ...e, label: "", kind: "modification", target: "arbre", fields: ["settings"] })).toBe("a changé ambiance");
   });
 });
