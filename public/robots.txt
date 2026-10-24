@@ -1,3 +1,5 @@
-# Arbre familial privé : aucune indexation.
+# Arbre familial privé, à ne pas indexer.
+# L'exploration reste permise pour que les moteurs lisent la consigne « noindex »
+# (balise meta et en-tête X-Robots-Tag) : un robots.txt qui bloque tout les empêcherait de la voir.
 User-agent: *
-Disallow: /
+Allow: /

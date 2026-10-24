@@ -14,13 +14,13 @@ Application web d'arbre généalogique **collaboratif**, d'une simplicité absol
 
 ## 3. Infrastructure (tout existe déjà et fonctionne)
 
-| Élément                         | Valeur                                                                                                                            |
-| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Dépôt GitHub                    | `skpointeuse-sk/mon-arbre-genealogique` (branche `main`)                                                                          |
-| Site en ligne                   | https://mon-arbre-genealogique-9v1t.vercel.app (déploiement auto à chaque push sur `main`)                                        |
-| Supabase (projet de CE produit) | ref `nyboahgdnqivjliqcrtd` · https://nyboahgdnqivjliqcrtd.supabase.co · région `eu-west-3` (Paris) · organisation « Site web SK » |
-| Clé publique (anon)             | `sb_publishable_ik0FkJWg51z39sF41OgWDg_MZoEMvyQ` (publique par conception, déjà en valeur par défaut dans `src/supabase.ts`)      |
-| Variables Vercel                | `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`                                                                              |
+| Élément                         | Valeur                                                                                                                                                                                  |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dépôt GitHub                    | `skpointeuse-sk/mon-arbre-genealogique` (branche `main`)                                                                                                                                |
+| Site en ligne                   | https://arbre.skdigital.fr (CNAME `arbre` chez OVH vers Vercel ; l'ancienne adresse mon-arbre-genealogique-9v1t.vercel.app redirige en 301) · déploiement auto à chaque push sur `main` |
+| Supabase (projet de CE produit) | ref `nyboahgdnqivjliqcrtd` · https://nyboahgdnqivjliqcrtd.supabase.co · région `eu-west-3` (Paris) · organisation « Site web SK »                                                       |
+| Clé publique (anon)             | `sb_publishable_ik0FkJWg51z39sF41OgWDg_MZoEMvyQ` (publique par conception, déjà en valeur par défaut dans `src/supabase.ts`)                                                            |
+| Variables Vercel                | `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`                                                                                                                                    |
 
 **⚠️ Ne touche JAMAIS** à un autre projet Supabase (Steven en possède d'autres, dont celui de « Pointeuse SK Digital », ref `lfhakelqgkkohryegets`). Ne jamais utiliser ni écrire la clé `service_role` dans le code ou le dépôt.
 **Pause Supabase gratuit** : un projet inactif 7 jours est mis en pause → « Failed to fetch » sur le site. Remède : `restore_project` (MCP) ou bouton « Restore project » du dashboard.
@@ -60,7 +60,7 @@ Landing plein écran avec **5 paysages animés** (prairie, forêt d'automne, mon
 4. (Réglé en phase 3) Export PNG/JPG/SVG/PDF A2-A1 avec paysage, profondeur et ascendance/descendance. Le SVG embarque l'arbre en foreignObject : pas de vrai vectoriel pour les cartes. Pas de livret de famille PDF.
 5. Restent à faire : carte des origines, souvenirs vocaux (colonne `audio_path` prête), livret de famille PDF. Faits : import GEDCOM, vérificateur, présence, membres, historique (depuis le 24/10/2026).
 6. Fait : tests unitaires et e2e, lint, boundary d'erreur, audit axe-core sans défaut. Reste : e-mails d'invitation non envoyés (l'invité est rattaché à la connexion seulement), suppression de compte en libre-service (aujourd'hui par email, promis sous 30 jours dans `/confidentialite`).
-7. (Réglé le 24/10/2026) « Confirm email » est actif. Envoi par Resend (forfait gratuit : 100 e-mails/jour, 3 000/mois) depuis `ne-pas-repondre@arbre.skdigital.fr`, SMTP `smtp.resend.com:465` réglé dans Supabase. Domaine `arbre.skdigital.fr` (DKIM + SPF chez OVH). Modèles en français dans `supabase/templates/` (`node supabase/templates/build.mjs --write`, puis coller dans Authentication > Emails > Templates). Redirect URL autorisée : `https://mon-arbre-genealogique-9v1t.vercel.app/**`. Parcours mot de passe oublié : `/nouveau-mot-de-passe`.
+7. (Réglé le 24/10/2026) « Confirm email » est actif. Envoi par Resend (forfait gratuit : 100 e-mails/jour, 3 000/mois) depuis `ne-pas-repondre@arbre.skdigital.fr`, SMTP `smtp.resend.com:465` réglé dans Supabase. Domaine `arbre.skdigital.fr` (DKIM + SPF chez OVH). Modèles en français dans `supabase/templates/` (`node supabase/templates/build.mjs --write`, puis coller dans Authentication > Emails > Templates). Site URL Supabase : `https://arbre.skdigital.fr`. Redirect URLs autorisées : `https://arbre.skdigital.fr/**` et l'ancienne `https://mon-arbre-genealogique-9v1t.vercel.app/**`. Le site n'est jamais indexé (meta + en-tête `noindex`, robots.txt qui laisse lire la consigne) pour ne pas se mêler à skdigital.fr. Parcours mot de passe oublié : `/nouveau-mot-de-passe`.
 
 ## 8. Décisions produit non négociables
 
