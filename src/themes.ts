@@ -1,28 +1,53 @@
 /* Ambiances de l'arbre. Les clés sont celles déjà enregistrées dans trees.settings.preset :
-   un arbre réglé sur « foret » dans l'ancienne version garde son ambiance. */
-export type Ambiance = { name: string; relief: "collines" | "sommets" };
+   un arbre réglé sur « foret » dans l'ancienne version garde son ambiance.
+   Les couleurs vivent dans styles.css (jetons --sky-*, --hill-*, --astre) : ici, seulement la forme. */
+export type Ambiance = {
+  name: string;
+  relief: "collines" | "sommets";
+  fx: "petales" | "feuilles" | "nuages" | "etoiles";
+};
 
 export const AMBIANCES: Record<string, Ambiance> = {
-  prairie: { name: "Prairie fleurie", relief: "collines" },
-  foret: { name: "Forêt d'automne", relief: "collines" },
-  aube: { name: "Montagnes à l'aube", relief: "sommets" },
-  mer: { name: "Coucher de soleil", relief: "collines" },
-  nuit: { name: "Nuit étoilée", relief: "sommets" },
+  prairie: { name: "Prairie fleurie", relief: "collines", fx: "petales" },
+  foret: { name: "Forêt d'automne", relief: "collines", fx: "feuilles" },
+  aube: { name: "Montagnes à l'aube", relief: "sommets", fx: "nuages" },
+  mer: { name: "Coucher de soleil", relief: "collines", fx: "nuages" },
+  nuit: { name: "Nuit étoilée", relief: "sommets", fx: "etoiles" },
 };
 export const ambianceOf = (preset?: string | null) => (preset && AMBIANCES[preset] ? preset : "prairie");
 
+/* L'ambiance essayée sur l'accueil devient celle du premier arbre. Simple confort :
+   si le navigateur refuse le stockage, on retombe sur la prairie. */
+const KEY = "ambiance-choisie";
+export const savedAmbiance = () => {
+  try {
+    return ambianceOf(localStorage.getItem(KEY));
+  } catch {
+    return "prairie";
+  }
+};
+export const saveAmbiance = (k: string) => {
+  try {
+    localStorage.setItem(KEY, k);
+  } catch {
+    /* stockage indisponible : sans conséquence */
+  }
+};
+
+/* Trois plans de relief, du plus lointain au plus proche (viewBox 1600 × 400). */
 const RELIEF = {
   collines: [
-    "M0,120 C220,70 420,150 720,96 C1020,44 1240,130 1600,80 V200 H0Z",
-    "M0,160 C300,118 520,190 860,148 C1160,112 1380,176 1600,140 V200 H0Z",
+    "M0,200 C200,120 400,260 700,180 C1000,100 1200,240 1600,150 V400 H0Z",
+    "M0,260 C250,180 450,320 800,240 C1100,170 1350,300 1600,230 V400 H0Z",
+    "M0,320 C300,260 500,360 850,310 C1150,270 1400,350 1600,300 V400 H0Z",
   ],
   sommets: [
-    "M0,130 L170,64 L300,112 L470,30 L640,118 L820,56 L1000,124 L1210,42 L1400,110 L1600,66 V200 H0Z",
-    "M0,170 L180,128 L360,160 L560,116 L760,166 L960,130 L1180,170 L1400,134 L1600,160 V200 H0Z",
+    "M0,220 L180,90 L300,170 L470,40 L650,190 L820,80 L1000,200 L1200,60 L1400,180 L1600,100 V400 H0Z",
+    "M0,290 L150,200 L320,270 L520,160 L720,280 L930,190 L1130,285 L1350,185 L1600,270 V400 H0Z",
+    "M0,345 L200,300 L420,340 L650,290 L900,345 L1150,305 L1400,345 L1600,310 V400 H0Z",
   ],
 };
 
-/* Relief statique en bas du canevas : un rappel discret du paysage choisi, sans animation. */
 export function reliefPaths(key: string) {
   return RELIEF[AMBIANCES[ambianceOf(key)].relief];
 }

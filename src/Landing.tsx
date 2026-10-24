@@ -4,6 +4,8 @@ import { frError } from "./ui";
 import { Mark } from "./icons";
 import { PersonCard } from "./card";
 import type { Person } from "./lib";
+import { Scene } from "./scenes";
+import { AMBIANCES, saveAmbiance, savedAmbiance } from "./themes";
 
 /* Personnes fictives de démonstration (déjà présentes dans l'ancienne page d'accueil). */
 const demo = (
@@ -47,6 +49,11 @@ export function Landing() {
   const [pw, setPw] = useState("");
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok?: boolean } | null>(null);
+  const [amb, setAmb] = useState(savedAmbiance);
+  const choose = (k: string) => {
+    setAmb(k);
+    saveAmbiance(k);
+  };
 
   const go = async (e: FormEvent) => {
     e.preventDefault();
@@ -65,10 +72,11 @@ export function Landing() {
   };
 
   return (
-    <div className="landing">
+    <div className="landing" data-ambiance={amb}>
+      <Scene id={amb} className="scene-fixed" />
       <header className="landing-bar">
         <span className="brand">
-          <Mark /> Mon arbre généalogique
+          <Mark /> Mon Arbre Généalogique
         </span>
         <button
           className="link"
@@ -149,6 +157,16 @@ export function Landing() {
         </section>
 
         <figure className="landing-demo" aria-label="Exemple d'arbre avec trois générations fictives">
+          <fieldset className="amb-pick">
+            <legend>Essayez une ambiance</legend>
+            {Object.entries(AMBIANCES).map(([k, a]) => (
+              <label key={k} className={k === amb ? "on" : ""}>
+                <input type="radio" name="ambiance" value={k} checked={k === amb} onChange={() => choose(k)} />
+                <span className="amb-swatch" data-ambiance={k} aria-hidden="true" />
+                {a.name}
+              </label>
+            ))}
+          </fieldset>
           <div className="demo-cards">
             <svg className="demo-lines" viewBox="0 0 428 378" aria-hidden="true">
               <path d="M196 52 H232 M214 52 V126 H98 V152" />

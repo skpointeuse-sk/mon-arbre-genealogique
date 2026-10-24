@@ -21,7 +21,8 @@ import {
   toGedcom,
   uid,
 } from "./lib";
-import { AMBIANCES, ambianceOf, reliefPaths } from "./themes";
+import { AMBIANCES, ambianceOf } from "./themes";
+import { Scene } from "./scenes";
 import { PersonCard } from "./card";
 import { PersonPanel, type AddRel } from "./Panel";
 import { AddDialog, CalendarDialog, ShareDialog, UnionDialog } from "./dialogs";
@@ -638,15 +639,13 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
     </div>
   );
 
-  const [ridge1, ridge2] = reliefPaths(ambiance);
-
   return (
     <div className="app" data-ambiance={ambiance}>
       <header className="topbar">
         <div className="topbar-id">
           <Mark size={26} />
           <div>
-            <p className="topbar-app">Mon arbre généalogique</p>
+            <p className="topbar-app">Mon Arbre Généalogique</p>
             <h1 className="topbar-title">{t.title}</h1>
           </div>
         </div>
@@ -692,10 +691,7 @@ export function TreeView({ tree, session }: { tree: Tree; session: Session | nul
           if (e.target === box.current && !gesture.current.moved) setSel(null);
         }}
       >
-        <svg className="relief" viewBox="0 0 1600 200" preserveAspectRatio="none" aria-hidden="true">
-          <path d={ridge1} className="relief-far" />
-          <path d={ridge2} className="relief-near" />
-        </svg>
+        <Scene id={ambiance} dx={v.x} dy={v.y} />
 
         {!loaded && (
           <p className="stage-msg" role="status">

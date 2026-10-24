@@ -1,8 +1,9 @@
-/* Mon arbre généalogique : feuille de style unique.
+/* Mon Arbre Généalogique : feuille de style unique.
    Polices auto-hébergées (paquets Fontsource, servies depuis le même domaine) :
    Source Serif 4 pour les noms, Atkinson Hyperlegible Next pour l'interface. */
 
-:root {
+:root,
+[data-ambiance="prairie"] {
   --paper: #e9ede6;
   --surface: #f6f8f3;
   --card: #ffffff;
@@ -19,9 +20,14 @@
   --g-pet: #8a6a2e;
   --focus: #b9801a;
   --danger: #a3362b;
-  --relief-1: #dde4d6;
-  --relief-2: #d0dac8;
   --scrim: rgba(23, 35, 29, 0.42);
+  --sky-1: oklch(0.89 0.045 225);
+  --sky-2: oklch(0.975 0.02 120);
+  --astre: oklch(0.97 0.08 100);
+  --hill-1: oklch(0.92 0.06 130);
+  --hill-2: oklch(0.86 0.085 135);
+  --hill-3: oklch(0.77 0.1 140);
+  --fx: oklch(0.86 0.07 350);
 
   --serif: "Source Serif 4 Variable", "Source Serif 4", Georgia, "Times New Roman", serif;
   --sans: "Atkinson Hyperlegible Next Variable", "Atkinson Hyperlegible Next", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -30,6 +36,13 @@
 }
 
 [data-ambiance="foret"] {
+  --sky-1: oklch(0.86 0.08 70);
+  --sky-2: oklch(0.96 0.03 80);
+  --astre: oklch(0.96 0.06 90);
+  --hill-1: oklch(0.84 0.07 65);
+  --hill-2: oklch(0.74 0.1 50);
+  --hill-3: oklch(0.6 0.1 42);
+  --fx: oklch(0.66 0.14 50);
   --paper: #ece6dc;
   --surface: #f6f2eb;
   --card: #fffdf9;
@@ -39,10 +52,15 @@
   --rule-soft: #e3d9cb;
   --oak: #74431f;
   --link: #a8937b;
-  --relief-1: #e3d7c5;
-  --relief-2: #d9c8b0;
 }
 [data-ambiance="aube"] {
+  --sky-1: oklch(0.84 0.07 20);
+  --sky-2: oklch(0.96 0.02 60);
+  --astre: oklch(0.94 0.05 70);
+  --hill-1: oklch(0.87 0.035 300);
+  --hill-2: oklch(0.77 0.06 295);
+  --hill-3: oklch(0.64 0.07 290);
+  --fx: oklch(0.99 0 0 / 0.75);
   --paper: #e7e8ee;
   --surface: #f4f4f8;
   --ink: #1c2030;
@@ -51,10 +69,15 @@
   --rule-soft: #dcdee6;
   --oak: #3f4a75;
   --link: #8d93aa;
-  --relief-1: #d9dbe5;
-  --relief-2: #cdd0dd;
 }
 [data-ambiance="mer"] {
+  --sky-1: oklch(0.8 0.11 45);
+  --sky-2: oklch(0.94 0.06 80);
+  --astre: oklch(0.97 0.05 90);
+  --hill-1: oklch(0.84 0.08 55);
+  --hill-2: oklch(0.73 0.09 15);
+  --hill-3: oklch(0.58 0.07 320);
+  --fx: oklch(0.98 0.02 60 / 0.7);
   --paper: #e5ebeb;
   --surface: #f2f6f6;
   --ink: #132326;
@@ -63,10 +86,15 @@
   --rule-soft: #d6e0e0;
   --oak: #1d5e66;
   --link: #7f979a;
-  --relief-1: #d3dfdf;
-  --relief-2: #c5d5d6;
 }
 [data-ambiance="nuit"] {
+  --sky-1: oklch(0.2 0.03 250);
+  --sky-2: oklch(0.36 0.055 250);
+  --astre: oklch(0.88 0.05 265);
+  --hill-1: oklch(0.31 0.05 250);
+  --hill-2: oklch(0.26 0.045 252);
+  --hill-3: oklch(0.21 0.035 255);
+  --fx: oklch(0.97 0.02 90);
   --paper: #121a21;
   --surface: #18222b;
   --card: #1c2730;
@@ -83,8 +111,6 @@
   --g-pet: #d2b26a;
   --focus: #e8c46f;
   --danger: #e07b6c;
-  --relief-1: #17212a;
-  --relief-2: #1c2832;
   --scrim: rgba(0, 0, 0, 0.55);
   color-scheme: dark;
 }
@@ -474,6 +500,68 @@ fieldset:disabled {
   flex-direction: column;
   background: var(--paper);
 }
+.landing {
+  position: relative;
+  isolation: isolate;
+  color: var(--ink);
+}
+.scene-fixed {
+  position: fixed;
+  z-index: -1;
+}
+.landing-bar,
+.landing-main,
+.landing-foot {
+  position: relative;
+}
+.amb-pick {
+  margin: 0 0 22px;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 428px;
+}
+.amb-pick legend {
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.amb-pick label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 6px 12px 6px 6px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 14px;
+  cursor: pointer;
+}
+.amb-pick label.on {
+  border-color: var(--oak);
+  box-shadow: inset 0 0 0 1px var(--oak);
+}
+.amb-pick input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.amb-pick label:has(input:focus-visible) {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.amb-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(var(--sky-1) 0 45%, var(--hill-2) 45% 70%, var(--hill-3) 70%);
+  border: 1px solid var(--rule);
+}
 .landing-bar {
   display: flex;
   align-items: center;
@@ -578,6 +666,9 @@ fieldset:disabled {
 .landing-demo figcaption {
   margin-top: 18px;
   max-width: 428px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: color-mix(in oklch, var(--surface) 88%, transparent);
   font-size: 13.5px;
   color: var(--ink-2);
 }
@@ -587,6 +678,7 @@ fieldset:disabled {
   margin: 0 auto;
   padding: 20px 24px 28px;
   border-top: 1px solid var(--rule-soft);
+  background: color-mix(in oklch, var(--surface) 92%, transparent);
   font-size: 13.5px;
   color: var(--ink-2);
 }
@@ -906,20 +998,110 @@ fieldset:disabled {
 .stage:focus-visible {
   box-shadow: inset 0 0 0 2px var(--focus);
 }
-.relief {
+/* Paysage animé (scenes.tsx) */
+.scene {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  width: 100%;
-  height: min(22vh, 170px);
+  inset: 0;
+  overflow: hidden;
   pointer-events: none;
+  background: linear-gradient(var(--sky-1), var(--sky-2) 70%);
 }
-.relief-far {
-  fill: var(--relief-1);
+.scene-astre {
+  position: absolute;
+  right: 14%;
+  top: 8%;
+  width: clamp(120px, 18vw, 230px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--astre) 0 38%, transparent 70%);
 }
-.relief-near {
-  fill: var(--relief-2);
+.scene-hill {
+  position: absolute;
+  bottom: 0;
+  left: -5%;
+  width: 110%;
+}
+.scene-hill-1 {
+  height: 46%;
+  fill: var(--hill-1);
+}
+.scene-hill-2 {
+  height: 36%;
+  fill: var(--hill-2);
+}
+.scene-hill-3 {
+  height: 24%;
+  fill: var(--hill-3);
+}
+.scene-fx span {
+  position: absolute;
+  display: block;
+  background: var(--fx);
+  animation: fx-fall linear infinite;
+}
+[data-fx="petales"] .scene-fx span {
+  top: -4%;
+  width: 11px;
+  height: 8px;
+  border-radius: 70% 0 70% 0;
+}
+[data-fx="feuilles"] .scene-fx span {
+  top: -4%;
+  width: 15px;
+  height: 10px;
+  border-radius: 0 80% 0 80%;
+}
+[data-fx="nuages"] .scene-fx span {
+  width: 220px;
+  height: 54px;
+  border-radius: 999px;
+  filter: blur(6px);
+  animation-name: fx-drift;
+}
+[data-fx="etoiles"] .scene-fx span {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  animation-name: fx-twinkle;
+  animation-timing-function: ease-in-out;
+}
+@keyframes fx-fall {
+  from {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate(40px, 55vh) rotate(200deg);
+  }
+  to {
+    transform: translate(-10px, 112vh) rotate(400deg);
+  }
+}
+@keyframes fx-drift {
+  from {
+    transform: translateX(-30vw);
+  }
+  to {
+    transform: translateX(110vw);
+  }
+}
+@keyframes fx-twinkle {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+/* Dans l'arbre, le relief reste bas pour ne pas gêner la lecture des cartes. */
+.stage .scene-hill-1 {
+  height: 30%;
+}
+.stage .scene-hill-2 {
+  height: 23%;
+}
+.stage .scene-hill-3 {
+  height: 15%;
 }
 .plane {
   position: absolute;
@@ -1034,6 +1216,9 @@ fieldset:disabled {
   right: 16px;
   bottom: 20px;
   z-index: 5;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--surface) 88%, transparent);
   font-size: 13px;
   color: var(--ink-2);
   pointer-events: none;
@@ -1473,5 +1658,12 @@ fieldset:disabled {
 @media (prefers-reduced-motion: reduce) {
   .plane.is-animating {
     transition: none;
+  }
+  .scene-fx span {
+    animation: none;
+  }
+  [data-fx="petales"] .scene-fx,
+  [data-fx="feuilles"] .scene-fx {
+    display: none;
   }
 }
